@@ -53,6 +53,22 @@ CREATE TABLE Transactions (
     FOREIGN KEY (user_id) REFERENCES Customers(user_id)
 );
 
+CREATE TABLE Intems (
+    item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    quantity INTEGER,
+    price REAL
+);
+
+CREATE TABLE Orders (
+    order_id INTEGER,
+    user_id TEXT,
+    order_date TEXT,
+    intem INTEGER,
+    FOREIGN KEY (intem) REFERENCES Intems(item_id),
+    FOREIGN KEY (user_id) REFERENCES Customers(user_id)
+);
+
 -- Inserting data into Customers table
 INSERT INTO Customers (user_id, name, nif, credit_card_type, credit_card_number, credit_card_validity, public_key)
 VALUES 
@@ -83,3 +99,12 @@ VALUES
     ('1', 'Ticket Purchase', '2024-04-10', 25.00),
     ('2', 'Ticket Purchase', '2024-04-12', 30.00);
 
+INSERT INTO Intems (name, quantity, price)
+VALUES 
+    ('Coke', 2, 1.50),
+    ('Popcorn', 1, 2.00);
+
+INSERT INTO Orders (order_id, user_id, order_date, intem)
+VALUES
+    (1, '1', '2024-04-10', 1),
+    (2, '2', '2024-04-12', 2);

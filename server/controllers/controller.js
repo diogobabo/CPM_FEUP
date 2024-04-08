@@ -196,9 +196,144 @@ const updateTicketState = (ticket_ids) => {
     db.serialize(() => {
         db.run('BEGIN TRANSACTION');
         ticket_ids.forEach(ticket_id => {
-            db.run(`UPDATE Tickets SET is_validated = 1 WHERE ticket_id = ?`, [ticket_id], (err) => {
+            db.run(`UPDATE Tickets SET is_used = 1 WHERE ticket_id = ?`, [ticket_id], (err) => {
                 if (err) {
                     console.error('Error updating ticket state:', err);
+                    db.run('ROLLBACK');
+                }
+            });
+        });
+
+        db.run('COMMIT', (err) => {
+            if (err) {
+                console.error('Error committing transaction:', err);
+            }
+        });
+    });
+};
+
+const checkItemValidity = (items) => {
+    let isValid = true;
+
+    items.forEach(item => {
+        db.get(`SELECT * FROM Intems WHERE item_id = ? AND quantity >= ?`, [item.item_id, item.quantity], (err, row) => {
+            if (err) {
+                console.error('Error checking item validity:', err);
+                isValid = false;
+            }
+
+            isValid = row.length > 0;
+        });
+    });
+
+    return isValid;
+}; 
+
+const checkVoucherValidity = (vouchers, user_id) => {
+    let isValid = true;
+
+    if (vouchers.length > 2) {
+        return false;
+    }
+    let validVoucher = [];
+
+    vouchers.forEach(voucher => {
+        db.get(`SELECT * FROM Vouchers WHERE voucher_id = ? AND is_used = 0 AND user_id = ?`, [voucher.voucher_id, user_id], (err, row) => {
+            if (err) {
+                console.error('Error checking voucher validity:', err);
+                isValid = false;
+            }
+
+            if (row.length > 0){
+                validVoucher.push(voucher);
+            }
+        })
+    });
+
+    return validVoucher
+};
+
+const calculateTotalPrice = (items, vouchers) => {
+    let totalPrice = 0;
+
+    db.get(`SELECT * FROM Items WHERE item_id = ? AND quantity >= ?`, [items.item_id, items.quantity], (err, row) => {
+        if (err) {
+            console.error('Error calculating total price:', err);
+            return 0;
+        }
+
+        totalPrice += row.price;
+    });
+
+    db.get(`SELECT * FROM Vouchers WHERE voucher_id = ?`, [vouchers.voucher_id], (err, row) => {
+        if (err) {
+            console.error('Error calculating total price:', err);
+            return 0;
+        }
+
+        if (row.type_code === '5') {
+            totalPrice = totalPrice * 0.95;
+        }
+    });
+
+    return totalPrice;
+};
+
+const updateItemQuantities = (items) => {
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        items.forEach(item => {
+            db.run(`UPDATE Items SET quantity = quantity - ? WHERE item_id = ?`, [item.quantity, item.item_id], (err) => {
+                if (err) {
+                    console.error('Error updating item quantities:', err);
+                    db.run('ROLLBACK');
+                }
+            })
+        });
+
+        db.run('COMMIT', (err) => {
+            if (err) {
+                console.error('Error committing transaction:', err);
+            }
+        });
+    });
+};
+
+const insertOrderIntoDatabase = (user_id, items) => {
+    let lastID = 0;
+    db.get(`SELECT MAX(order_id) as lastID FROM Orders`, (err, row) => {
+        if (err) {
+            console.error('Error inserting order into database:', err);
+        }
+
+        lastID = row.lastID;
+    });
+
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        items.forEach(item => {
+            db.run(`INSERT INTO Orders (order_id, user_id, item_id, quantity, order_date) VALUES (?, ?, ?, ?)`, [lastID + 1, item.item_id, item.quantity, new Date().toISOString()], (err) => {
+                if (err) {
+                    console.error('Error inserting order into database:', err);
+                    db.run('ROLLBACK');
+                }
+            });
+        });
+        db.run('COMMIT', (err) => {
+            if (err) {
+                console.error('Error committing transaction:', err);
+            }
+        });
+    });
+};
+
+const deleteUsedVouchers = (vouchers) => {
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        vouchers.forEach(voucher => {
+            db.run(`UPDATE Vouchers SET is_used = 1 WHERE voucher_id = ?`, [voucher.voucher_id], (err) => {
+                if (err) {
+                    console.error('Error deleting used vouchers:', err);
                     db.run('ROLLBACK');
                 }
             });
@@ -225,9 +360,9 @@ const makeCafeteriaOrder = (req, res) => {
 
     // Step 2: Check the validity of items and vouchers
     const isValidItems = checkItemValidity(items); // Implement checkItemValidity function
-    const isValidVouchers = checkVoucherValidity(vouchers); // Implement checkVoucherValidity function
+    const validVouchers = checkVoucherValidity(vouchers, user_id); // Implement checkVoucherValidity function
 
-    if (!isValidItems || !isValidVouchers) {
+    if (!isValidItems) {
         return res.status(400).json({ error: 'Invalid items or vouchers' });
     }
 
@@ -238,7 +373,7 @@ const makeCafeteriaOrder = (req, res) => {
     updateItemQuantities(items); // Implement updateItemQuantities function
 
     // Step 5: Insert order information into the Orders table
-    insertOrderIntoDatabase(user_id, items, totalPrice); // Implement insertOrderIntoDatabase function
+    insertOrderIntoDatabase(user_id, items); // Implement insertOrderIntoDatabase function
 
     // Step 6: Delete used vouchers from the Vouchers table
     deleteUsedVouchers(vouchers); // Implement deleteUsedVouchers function
@@ -247,17 +382,34 @@ const makeCafeteriaOrder = (req, res) => {
     res.status(200).json({ order_confirmation: 'Order placed successfully', total_price: totalPrice });
 };
 
-const validateVouchers = (req, res) => {
-    // Implement validate vouchers logic here
-};
 
 const consultTransactions = (req, res) => {
-    // Implement consult transactions logic here
+    const { user_id } = req.body;
+
+    let transactions = [];
+    let orders = [];
+
+    db.get(`SELECT * FROM Transactions WHERE user_id = ?`, [user_id], (err, row) => {
+        if (err) {
+            console.error('Error consulting transactions:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        transactions = row;
+    });
+
+    db.get(`SELECT * FROM Orders WHERE user_id = ?`, [user_id], (err, row) => {
+        if (err) {
+            console.error('Error consulting transactions:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        orders = row;
+    });
+
+    res.status(200).json({ transactions, orders });
 };
 
-const presentTickets = (req, res) => {
-    // Implement presenting tickets logic here
-};
 
 const validateVouchersAndPayOrder = (req, res) => {
     // Extract data from request body
@@ -317,8 +469,6 @@ module.exports = {
     purchaseTickets,
     validateTickets,
     makeCafeteriaOrder,
-    validateVouchers,
     consultTransactions,
-    presentTickets,
     validateVouchersAndPayOrder
 };

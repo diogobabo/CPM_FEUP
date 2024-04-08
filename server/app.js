@@ -26,9 +26,7 @@ app.get('/performances', getNextPerformances);
 app.post('/purchase-tickets', purchaseTickets);
 app.post('/validate-tickets', validateTickets);
 app.post('/make-cafeteria-order', makeCafeteriaOrder);
-app.post('/validate-vouchers', validateVouchers);
 app.get('/consult-transactions', consultTransactions);
-app.post('/present-tickets', presentTickets);
 app.post('/validate-vouchers-and-pay-order', validateVouchersAndPayOrder);
 
 // Start the server

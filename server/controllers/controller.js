@@ -166,8 +166,12 @@ const validateTickets = (req, res) => {
     // Step 2: Check the validity of tickets
     const isValidTickets = checkTicketValidity(user_id, ticket_ids, performance_id); // Implement checkTicketValidity function
 
-    if (!isValidTickets) {
+    if (isValidTickets === 0) {
         return res.status(400).json({ error: 'Invalid tickets' });
+    }
+
+    else if (isValidTickets === 1) {
+        return res.status(200).json({ error: 'Ticket already used' });
     }
 
     // Step 3: Update the state of validated tickets in the database
@@ -183,10 +187,16 @@ const checkTicketValidity = (user_id, ticket_ids, performance_id) => {
         db.get(`SELECT * FROM Tickets WHERE user_id = ? AND ticket_id = ? AND performance_id = ?`, [user_id, element, performance_id], (err, row) => {
             if (err) {
                 console.error('Error checking ticket validity:', err);
-                return false;
+                return 0;
             }
 
-            return row.length > 0;
+            if (row.length === 0) {
+                return 0;
+            }
+            else if (row.is_used === 1) {
+                return 1;
+            }
+            return 2;
         });
     });
 };
@@ -323,6 +333,7 @@ const insertOrderIntoDatabase = (user_id, items) => {
             if (err) {
                 console.error('Error committing transaction:', err);
             }
+            return lastID + 1;
         });
     });
 };
@@ -373,13 +384,13 @@ const makeCafeteriaOrder = (req, res) => {
     updateItemQuantities(items); // Implement updateItemQuantities function
 
     // Step 5: Insert order information into the Orders table
-    insertOrderIntoDatabase(user_id, items); // Implement insertOrderIntoDatabase function
+    const order_id = insertOrderIntoDatabase(user_id, items); // Implement insertOrderIntoDatabase function
 
     // Step 6: Delete used vouchers from the Vouchers table
     deleteUsedVouchers(vouchers); // Implement deleteUsedVouchers function
 
     // Step 7: Return order confirmation and total price to the client
-    res.status(200).json({ order_confirmation: 'Order placed successfully', total_price: totalPrice });
+    res.status(200).json({ order_confirmation: 'Order placed successfully', total_price: totalPrice, order_id: order_id});
 };
 
 
@@ -388,6 +399,9 @@ const consultTransactions = (req, res) => {
 
     let transactions = [];
     let orders = [];
+    let vouchers = [];
+    let intems = [];
+
 
     db.get(`SELECT * FROM Transactions WHERE user_id = ?`, [user_id], (err, row) => {
         if (err) {
@@ -407,7 +421,26 @@ const consultTransactions = (req, res) => {
         orders = row;
     });
 
-    res.status(200).json({ transactions, orders });
+    db.get(`SELECT * FROM Vouchers WHERE user_id = ?`, [user_id], (err, row) => {
+        if (err) {
+            console.error('Error consulting transactions:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        vouchers = row;
+    });
+
+    db.get(`SELECT * FROM Items `, [], (err, row) => {
+        if (err) {
+            console.error('Error consulting transactions:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        intems = row;
+    });
+
+
+    res.status(200).json({ transactions, orders, vouchers, intems });
 };
 
 

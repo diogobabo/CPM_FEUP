@@ -73,8 +73,11 @@ object KeyManager {
     }
 
     // Function to sing data
-    fun singData(data: ByteArray): ByteArray {
+    fun singData(data: ByteArray): ByteArray? {
         val signature = java.security.Signature.getInstance(SIGN_ALGO)
+        if (keyPair == null) {
+            return null
+        }
         signature.initSign(keyPair?.private)
         signature.update(data)
         return signature.sign()

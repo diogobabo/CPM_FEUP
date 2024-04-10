@@ -11,15 +11,21 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AppCompatActivity
+import com.feup.cpm.ticketbuy.controllers.Controller
+import com.feup.cpm.ticketbuy.models.Customer
 import com.feup.cpm.ticketbuy.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+    private var customer: Customer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Load customer data from local storage
+        customer = Controller.getLocalCustomer(this)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

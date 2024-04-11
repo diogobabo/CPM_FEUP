@@ -6,7 +6,6 @@ import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 import android.content.Context
-import androidx.core.content.edit
 import com.feup.cpm.ticketbuy.controllers.cypher.KeyManager.singData
 import com.feup.cpm.ticketbuy.models.*
 
@@ -38,9 +37,9 @@ object Controller {
             put("creditCardNumber", customer.creditCardNumber)
             put("creditCardValidity", customer.creditCardValidity)
         }
-        getSharedPreferences(context).edit {
-            putString(CUSTOMER_PREF_KEY, json.toString())
-        }
+        val editor = getSharedPreferences(context).edit()
+        editor.putString(CUSTOMER_PREF_KEY, json.toString())
+        editor.apply()
     }
 
     private fun readStream(input: InputStream): String {

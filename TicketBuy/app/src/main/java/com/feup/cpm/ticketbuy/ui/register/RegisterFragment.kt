@@ -59,16 +59,6 @@ class RegisterFragment : Fragment() {
             if (validateInputs(name, nif, cardType, cardNumber, cardValidityMonth, cardValidityYear)) {
                 // Handle registration here
                 showToast("Registration Successful")
-
-                // Navigate to the profile fragment
-                findNavController().navigate(RegisterFragmentDirections.actionRegisterFragmentToProfileFragment(
-                    name = name,
-                    nif = nif,
-                    cardType = cardType,
-                    cardNumber = cardNumber,
-                    cardValidityMonth = cardValidityMonth,
-                    cardValidityYear = cardValidityYear
-                ))
             } else {
                 //showToast("Please fill in all fields correctly")
             }

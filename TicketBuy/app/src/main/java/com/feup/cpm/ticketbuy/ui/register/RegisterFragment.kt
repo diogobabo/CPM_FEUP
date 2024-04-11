@@ -10,6 +10,11 @@ import android.widget.Toast
 import android.support.v4.app.Fragment
 import android.arch.lifecycle.ViewModelProvider
 import com.feup.cpm.ticketbuy.databinding.FragmentRegisterBinding
+import java.util.Calendar
+import android.widget.Spinner
+import android.widget.ArrayAdapter
+import androidx.navigation.fragment.findNavController
+
 
 class RegisterFragment : Fragment() {
 
@@ -31,32 +36,45 @@ class RegisterFragment : Fragment() {
 
         val etName: EditText = binding.etName
         val etNIF: EditText = binding.etNIF
-        val etCardType: EditText = binding.etCardType
+        val etCardType: Spinner = binding.etCardType
         val etCardNumber: EditText = binding.etCardNumber
-        val etCardValidity: EditText = binding.etCardValidity
+        val etCardValidityMonth: EditText = binding.etCardValidityMonth
+        val etCardValidityYear: EditText = binding.etCardValidityYear
         val btnRegister: Button = binding.btnRegister
+
+        // Initialize Spinner for Card Type
+        val cardTypeOptions = arrayOf("Visa", "Mastercard")
+        val cardTypeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, cardTypeOptions)
+        cardTypeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        etCardType.adapter = cardTypeAdapter
 
         btnRegister.setOnClickListener {
             val name = etName.text.toString()
             val nif = etNIF.text.toString()
-            val cardType = etCardType.text.toString()
+            val cardType = etCardType.selectedItem.toString()
             val cardNumber = etCardNumber.text.toString()
-            val cardValidity = etCardValidity.text.toString()
+            val cardValidityMonth = etCardValidityMonth.text.toString()
+            val cardValidityYear = etCardValidityYear.text.toString()
 
-            if (validateInputs(name, nif, cardType, cardNumber, cardValidity)) {
+            if (validateInputs(name, nif, cardType, cardNumber, cardValidityMonth, cardValidityYear)) {
                 // Handle registration here
                 showToast("Registration Successful")
+
+                // Navigate to the profile fragment
+                findNavController().navigate(RegisterFragmentDirections.actionRegisterFragmentToProfileFragment(
+                    name = name,
+                    nif = nif,
+                    cardType = cardType,
+                    cardNumber = cardNumber,
+                    cardValidityMonth = cardValidityMonth,
+                    cardValidityYear = cardValidityYear
+                ))
             } else {
-                showToast("Please fill in all fields")
+                //showToast("Please fill in all fields correctly")
             }
         }
 
         return root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 
     private fun validateInputs(
@@ -64,10 +82,59 @@ class RegisterFragment : Fragment() {
         nif: String,
         cardType: String,
         cardNumber: String,
-        cardValidity: String
+        cardValidityMonth: String,
+        cardValidityYear: String
     ): Boolean {
-        return name.isNotBlank() && nif.isNotBlank() && cardType.isNotBlank()
-                && cardNumber.isNotBlank() && cardValidity.isNotBlank()
+        if (name.isBlank()) {
+            showToast("Name cannot be empty")
+            return false
+        }
+        if (!nif.isValidNIF()) {
+            showToast("NIF must be a number with exactly 9 digits")
+            return false
+        }
+        if (!cardType.isValidCardType()) {
+            showToast("Invalid card type. Please select Visa or Mastercard")
+            return false
+        }
+        if (!cardNumber.isValidCardNumber()) {
+            showToast("Card number must have 16-19 digits")
+            return false
+        }
+        if (!cardValidityMonth.isValidCardValidityMonth()) {
+            showToast("Invalid card validity month. Please enter a valid month (1-12)")
+            return false
+        }
+        if (!cardValidityYear.isValidCardValidityYear()) {
+            showToast("Invalid card validity year. Please enter a valid year")
+            return false
+        }
+        return true
+    }
+
+    private fun String.isValidNIF(): Boolean {
+        return this.matches("\\d{9}".toRegex())
+    }
+
+    private fun String.isValidCardType(): Boolean {
+        return this.equals("Visa", ignoreCase = true) || this.equals("Mastercard", ignoreCase = true)
+    }
+
+    private fun String.isValidCardNumber(): Boolean {
+        return this.matches("\\d{16,19}".toRegex())
+    }
+
+    private fun String.isValidCardValidityMonth(): Boolean {
+        return this.toIntOrNull() in 1..12
+    }
+
+    private fun String.isValidCardValidityYear(): Boolean {
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        return (this.toIntOrNull() ?: 0) >= currentYear
+    }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun showToast(message: String) {

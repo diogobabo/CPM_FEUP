@@ -12,31 +12,38 @@
     <EditText
         android:id="@+id/etNIF"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:hint="NIF" />
 
-    <EditText
+    <Spinner
         android:id="@+id/etCardType"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
+        android:prompt="@string/card_type_prompt"
         android:hint="Card Type" />
 
     <EditText
         android:id="@+id/etCardNumber"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:hint="Card Number" />
 
     <EditText
-        android:id="@+id/etCardValidity"
+        android:id="@+id/etCardValidityMonth"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Card Validity" />
+        android:layout_height="48dp"
+        android:hint="Card Validity Month" />
+
+    <EditText
+        android:id="@+id/etCardValidityYear"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Card Validity Year" />
 
     <Button
         android:id="@+id/btnRegister"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:text="Register" />
 
 </LinearLayout>

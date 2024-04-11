@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/nav_home"
-        android:name="com.feup.cpm.ticketbuy.ui.home.HomeFragment"
+        android:name="com.feup.cpm.ticketbuy.ui.register.HomeFragment"
         android:label="@string/menu_home"
         tools:layout="@layout/fragment_home" />
 

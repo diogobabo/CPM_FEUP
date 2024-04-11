@@ -1,0 +1,42 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/etName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Name" />
+
+    <EditText
+        android:id="@+id/etNIF"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="NIF" />
+
+    <EditText
+        android:id="@+id/etCardType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Card Type" />
+
+    <EditText
+        android:id="@+id/etCardNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Card Number" />
+
+    <EditText
+        android:id="@+id/etCardValidity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Card Validity" />
+
+    <Button
+        android:id="@+id/btnRegister"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Register" />
+
+</LinearLayout>

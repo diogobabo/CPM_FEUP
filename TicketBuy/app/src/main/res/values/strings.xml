@@ -13,4 +13,7 @@
     <string name="menu_register">Register</string>
 
     <string name="card_type_prompt">Card Type</string>
+
+    <string name="menu_performances">Performances</string>
+
 </resources>

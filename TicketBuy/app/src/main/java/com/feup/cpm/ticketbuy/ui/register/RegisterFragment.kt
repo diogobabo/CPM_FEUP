@@ -13,7 +13,6 @@ import com.feup.cpm.ticketbuy.databinding.FragmentRegisterBinding
 import java.util.Calendar
 import android.widget.Spinner
 import android.widget.ArrayAdapter
-import androidx.navigation.fragment.findNavController
 
 
 class RegisterFragment : Fragment() {

@@ -1,87 +1,86 @@
 package com.feup.cpm.ticketbuy.ui.performances
 
-import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageView
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 
 class PerformancesFragment : Fragment() {
 
+    data class Performance(val title: String, val date: String, val price: String)
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val performancesViewModel = ViewModelProvider(
-            this,
-            ViewModelProvider.NewInstanceFactory()
-        ).get(PerformancesViewModel::class.java)
+        val rootLayout = LinearLayout(requireContext())
+        rootLayout.orientation = LinearLayout.VERTICAL
 
-
-        // Define root layout as a ViewGroup
-        val layoutResourceId = resources.getIdentifier("fragment_performances", "layout", activity?.applicationContext?.packageName)
-        val root = inflater.inflate(layoutResourceId, container, false) as ViewGroup
-
-        data class Performance(val title: String, val date: String, val price: String, val imageResource: Int)
-
-        // Performances data (to be replaced with actual data from the server)
         val performances = listOf(
-            Performance("Performance Title 1", "Performance Date 1", "$100", 1),
-            Performance("Performance Title 2", "Performance Date 2", "$120", 2),
-            Performance("Performance Title 3", "Performance Date 3", "$80", 3),
-            Performance("Performance Title 4", "Performance Date 4", "$90", 4)
+            Performance("Performance Title 1", "Performance Date 1", "$100"),
+            Performance("Performance Title 2", "Performance Date 2", "$120"),
+            Performance("Performance Title 3", "Performance Date 3", "$80"),
+            Performance("Performance Title 4", "Performance Date 4", "$90")
         )
 
-        // Find views for each performance
-        val performanceViews = mutableListOf<View>()
-        for (i in 1..4) {
-            val performanceViewModel = ViewModelProvider(
-                this,
-                ViewModelProvider.NewInstanceFactory()
-            ).get(PerformanceViewModel::class.java)
+        performances.forEach { performance ->
+            val performanceLayout = createPerformanceLayout(inflater, container, performance)
+            rootLayout.addView(performanceLayout)
         }
 
-        // Populate data for each performance
-        for ((index, performance) in performances.withIndex()) {
-            val performanceView = performanceViews[index]
+        return rootLayout
+    }
 
-            val imageViewPerformance = performanceView.findViewById<ImageView>(0/* Replace with ImageView ID */)
-            val textViewPerformanceTitle = performanceView.findViewById<TextView>(0/* Replace with TextView ID */)
-            val textViewPerformanceDate = performanceView.findViewById<TextView>(0/* Replace with TextView ID */)
-            val textViewPerformancePrice = performanceView.findViewById<TextView>(0/* Replace with TextView ID */)
-            val buttonBuyTickets = performanceView.findViewById<Button>(0/* Replace with Button ID */)
+    private fun createPerformanceLayout(inflater: LayoutInflater, container: ViewGroup?, performance: Performance): View {
+        val performanceLayout = LinearLayout(requireContext())
+        performanceLayout.orientation = LinearLayout.VERTICAL
 
-            // Set data for the performance
-            // imageViewPerformance.setImageResource(performance.imageResource)
-            textViewPerformanceTitle.text = performance.title
-            textViewPerformanceDate.text = performance.date
-            textViewPerformancePrice.text = performance.price
+        val titleTextView = TextView(requireContext())
+        titleTextView.text = performance.title
+        performanceLayout.addView(titleTextView)
 
-            // Set click listener for buying tickets
-            buttonBuyTickets.setOnClickListener {
-                // Handle buy tickets action
-                showToast("Buying tickets for ${performance.title}")
+        val dateTextView = TextView(requireContext())
+        dateTextView.text = performance.date
+        performanceLayout.addView(dateTextView)
+
+        val priceTextView = TextView(requireContext())
+        priceTextView.text = performance.price
+        performanceLayout.addView(priceTextView)
+
+        val ticketsLayout = LinearLayout(requireContext())
+        ticketsLayout.orientation = LinearLayout.HORIZONTAL
+        val ticketsTextView = TextView(requireContext())
+        ticketsTextView.text = "Tickets: "
+        val ticketsEditText = EditText(requireContext())
+        ticketsEditText.hint = "Enter number"
+        ticketsEditText.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        ticketsLayout.addView(ticketsTextView)
+        ticketsLayout.addView(ticketsEditText)
+        performanceLayout.addView(ticketsLayout)
+
+        val buyButton = Button(requireContext())
+        buyButton.text = "Buy Tickets"
+        buyButton.setOnClickListener {
+            val numTickets = ticketsEditText.text.toString().toIntOrNull() ?: 0
+            if (numTickets > 0 && numTickets <= 4) {
+                showToast("Buying $numTickets ticket(s) for ${performance.title}")
+            } else {
+                showToast("Please enter a valid number of tickets (1-4) for ${performance.title}")
             }
-
-            // Add the performance view to the root layout
-            root.addView(performanceView)
         }
+        performanceLayout.addView(buyButton)
 
-        return root
+        return performanceLayout
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
-
-    private fun ViewModelProvider.get(java: Class<PerformanceViewModel>): PerformanceViewModel {
-        return this.get(PerformanceViewModel::class.java)
-    }
-
 }

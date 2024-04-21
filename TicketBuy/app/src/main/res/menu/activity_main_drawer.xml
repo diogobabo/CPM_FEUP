@@ -20,5 +20,9 @@
             android:id="@+id/nav_register"
             android:icon="@drawable/ic_menu_slideshow"
             android:title="@string/menu_register" />
+        <item
+            android:id="@+id/nav_performances"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="@string/menu_performances"/>
     </group>
 </menu>

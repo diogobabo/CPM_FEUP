@@ -7,8 +7,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
-import android.support.v4.app.Fragment
-import android.arch.lifecycle.ViewModelProvider
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.feup.cpm.ticketbuy.databinding.FragmentRegisterBinding
 import java.util.Calendar
 import android.widget.Spinner

@@ -10,10 +10,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import android.app.AlertDialog
 
 class PerformancesFragment : Fragment() {
 
-    data class Performance(val title: String, val date: String, val price: String)
+    data class Performance(val title: String, val date: String, val price: Int)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -24,10 +25,10 @@ class PerformancesFragment : Fragment() {
         rootLayout.orientation = LinearLayout.VERTICAL
 
         val performances = listOf(
-            Performance("Performance Title 1", "Performance Date 1", "$100"),
-            Performance("Performance Title 2", "Performance Date 2", "$120"),
-            Performance("Performance Title 3", "Performance Date 3", "$80"),
-            Performance("Performance Title 4", "Performance Date 4", "$90")
+            Performance("Performance Title 1", "Performance Date 1", 100),
+            Performance("Performance Title 2", "Performance Date 2", 120),
+            Performance("Performance Title 3", "Performance Date 3", 80),
+            Performance("Performance Title 4", "Performance Date 4", 90)
         )
 
         performances.forEach { performance ->
@@ -51,7 +52,7 @@ class PerformancesFragment : Fragment() {
         performanceLayout.addView(dateTextView)
 
         val priceTextView = TextView(requireContext())
-        priceTextView.text = performance.price
+        priceTextView.text = performance.price.toString() + "€"
         performanceLayout.addView(priceTextView)
 
         val ticketsLayout = LinearLayout(requireContext())
@@ -70,7 +71,8 @@ class PerformancesFragment : Fragment() {
         buyButton.setOnClickListener {
             val numTickets = ticketsEditText.text.toString().toIntOrNull() ?: 0
             if (numTickets > 0 && numTickets <= 4) {
-                showToast("Buying $numTickets ticket(s) for ${performance.title}")
+                val totalCost = numTickets * performance.price.toInt()
+                showConfirmationDialog(performance.title, numTickets, totalCost)
             } else {
                 showToast("Please enter a valid number of tickets (1-4) for ${performance.title}")
             }
@@ -78,6 +80,20 @@ class PerformancesFragment : Fragment() {
         performanceLayout.addView(buyButton)
 
         return performanceLayout
+    }
+
+    private fun showConfirmationDialog(title: String, numTickets: Int, totalCost: Int) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Confirm Purchase")
+            .setMessage("Do you want to buy $numTickets ticket(s) for $title? Total cost: $totalCost€")
+            .setPositiveButton("Yes") { dialog, _ ->
+                showToast("Buying $numTickets ticket(s) for $title. Total cost: $totalCost€")
+                dialog.dismiss()
+            }
+            .setNegativeButton("No") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
     private fun showToast(message: String) {

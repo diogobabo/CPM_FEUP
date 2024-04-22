@@ -1,16 +1,22 @@
 package com.feup.cpm.ticketbuy.controllers
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import com.feup.cpm.ticketbuy.controllers.cypher.KeyManager
 import org.json.JSONObject
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 import android.content.Context
+import android.content.Intent
+import com.feup.cpm.ticketbuy.MainActivity
 import com.feup.cpm.ticketbuy.controllers.cypher.KeyManager.singData
 import com.feup.cpm.ticketbuy.models.*
+import kotlinx.coroutines.DelicateCoroutinesApi
 
 //Server URL
-val serverURL = "192.168.1.87:3000"
+val serverURL = "http://192.168.1.87:3000"
 
 
 object Controller {
@@ -60,6 +66,7 @@ object Controller {
     }
 
     // Function to register a customer
+    @OptIn(DelicateCoroutinesApi::class)
     fun registerCustomer(
         context: Context,
         name: String,
@@ -67,7 +74,7 @@ object Controller {
         creditCardType: String,
         creditCardNumber: String,
         creditCardValidity: String,
-    ): Customer? {
+    ) {
         
         // Post to the server
         val url = "$serverURL/register"
@@ -83,43 +90,58 @@ object Controller {
         json.put("creditCardNumber", creditCardNumber)
         json.put("creditCardValidity", creditCardValidity)
         json.put("publicKey", publicKey)
-
-        try {
-            with(urlObj.openConnection() as HttpURLConnection) {
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("charset", "utf-8")
-                setRequestProperty("Content-Length", json.toString().toByteArray().size.toString())
-                outputStream.write(json.toString().toByteArray())
-                val response = readStream(inputStream)
-
-                // Parse the response
-                val responseJson = JSONObject(response)
-                if (responseJson.has("error")) {
-                    println("registerCustomer: ${responseJson.getString("error")}")
-                    return null
-                } else {
-                    println("registerCustomer: ${responseJson.getString("userId")}")
-
-                    val customer = Customer(
-                        responseJson.getString("userId"),
-                        name,
-                        nif,
-                        creditCardType,
-                        creditCardNumber,
-                        creditCardValidity
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                with(urlObj.openConnection() as HttpURLConnection) {
+                    requestMethod = "POST"
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("charset", "utf-8")
+                    setRequestProperty(
+                        "Content-Length",
+                        json.toString().toByteArray().size.toString()
                     )
-                    saveCustomerLocally(context, customer)
-                    userID = responseJson.getString("userId")
+                    outputStream.write(json.toString().toByteArray())
+                    outputStream.close()
 
-                    return customer
+                    val responseCode = responseCode
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        println("registerCustomer: $responseCode")
+                        return@launch
+                    }
+                    val response = readStream(inputStream)
+                    // Parse the response
+                    val responseJson = JSONObject(response)
+                    if (responseJson.has("error")) {
+                        println("registerCustomer: ${responseJson.getString("error")}")
+                    } else {
+                        println("registerCustomer: ${responseJson.getString("user_id")}")
+
+                        val customer = Customer(
+                            responseJson.getString("user_id"),
+                            name,
+                            nif,
+                            creditCardType,
+                            creditCardNumber,
+                            creditCardValidity
+                        )
+                        saveCustomerLocally(context, customer)
+                        userID = responseJson.getString("user_id")
+
+                        // Restart the app
+                        restartApp(context)
+
+                    }
                 }
+            } catch (e: Exception) {
+                println("registerCustomer: $e")
             }
-        } catch (e: Exception) {
-            println("registerCustomer: ${e.message}")
-            return null
         }
+    }
+    private fun restartApp(context: Context) {
+        val intent = Intent(context, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        context.startActivity(intent)
     }
 
     fun getLocalCustomer(context: Context): Customer? {

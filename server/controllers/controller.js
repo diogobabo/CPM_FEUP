@@ -44,11 +44,11 @@ const fetchPublicKey = (user_id) => {
 
 const registerCustomer = (req, res) => {
     // Extract data from request body
+    console.log(req.body);
     const { name, nif, credit_card_type, credit_card_number, credit_card_validity, public_key } = req.body;
 
     // Generate user id and private key
     const user_id = uuid.v4();
-    const private_key = generatePrivateKey(); // Implement function to generate private key
 
     // Insert customer data into database
     const sql = `INSERT INTO Customers (user_id, name, nif, credit_card_type, credit_card_number, credit_card_validity, public_key)

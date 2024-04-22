@@ -2,12 +2,14 @@ package com.feup.cpm.ticketbuy.controllers.cypher
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Base64
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.KeyStore.LoadStoreParameter
+import java.security.interfaces.RSAPublicKey
 import java.util.Calendar
 import java.util.GregorianCalendar
 import javax.security.auth.x500.X500Principal
@@ -68,8 +70,10 @@ object KeyManager {
         }
     }
     // Function to get the public key
-    fun getPublicKey(): String {
-        return this.keyPair?.public.toString()
+    fun getPublicKey(): String? {
+        val publicKey = this.keyPair?.public as? RSAPublicKey ?: return null
+        val encodedPublicKey = publicKey.encoded
+        return Base64.encodeToString(encodedPublicKey, Base64.DEFAULT)
     }
 
     // Function to sing data

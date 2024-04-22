@@ -14,13 +14,12 @@ import java.util.Calendar
 import android.widget.Spinner
 import android.widget.ArrayAdapter
 import com.feup.cpm.ticketbuy.controllers.Controller
-import com.feup.cpm.ticketbuy.models.Customer
 
 class RegisterFragment : Fragment() {
 
     private var _binding: FragmentRegisterBinding? = null
     private val binding get() = _binding!!
-
+    private val controller = Controller
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -54,9 +53,9 @@ class RegisterFragment : Fragment() {
             val cardValidityYear = etCardValidityYear.text.toString()
 
             if (validateInputs(name, nif, cardType, cardNumber, cardValidityMonth, cardValidityYear)) {
-                //TODO:Don't know how to add an ID here - Context
-                //Controller.registerCustomer(, name, nif, cardType, cardNumber, cardValidityMonth)
-                showToast("Registration Successful")
+                controller.registerCustomer(requireContext(),name, nif,
+                    cardType, cardNumber, "$cardValidityMonth/$cardValidityYear"
+                )
             } else {
                 showToast("Please fill in all fields correctly")
             }

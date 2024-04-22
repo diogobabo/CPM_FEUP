@@ -24,7 +24,7 @@ class PerformancesFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val rootLayout = LinearLayout(requireContext())
         rootLayout.orientation = LinearLayout.VERTICAL
 

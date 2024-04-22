@@ -20,12 +20,14 @@ class MainActivity : AppCompatActivity()  {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private var customer: Customer? = null
+    private val controller = Controller
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Load customer data from local storage
-        customer = Controller.getLocalCustomer(this)
+        customer = controller.getLocalCustomer(this)
+        println("Customer: $customer")
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

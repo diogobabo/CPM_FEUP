@@ -13,7 +13,8 @@ import com.feup.cpm.ticketbuy.databinding.FragmentRegisterBinding
 import java.util.Calendar
 import android.widget.Spinner
 import android.widget.ArrayAdapter
-
+import com.feup.cpm.ticketbuy.controllers.Controller
+import com.feup.cpm.ticketbuy.models.Customer
 
 class RegisterFragment : Fragment() {
 
@@ -25,15 +26,12 @@ class RegisterFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val registerViewModel = ViewModelProvider(
-            this,
-            ViewModelProvider.NewInstanceFactory()
-        ).get(RegisterViewModel::class.java)
+        val registerViewModel = ViewModelProvider(this, ViewModelProvider.NewInstanceFactory()).get(RegisterViewModel::class.java)
 
         _binding = FragmentRegisterBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val etName: EditText = binding.etName
+        val etName: EditText =  binding.etName
         val etNIF: EditText = binding.etNIF
         val etCardType: Spinner = binding.etCardType
         val etCardNumber: EditText = binding.etCardNumber
@@ -56,10 +54,11 @@ class RegisterFragment : Fragment() {
             val cardValidityYear = etCardValidityYear.text.toString()
 
             if (validateInputs(name, nif, cardType, cardNumber, cardValidityMonth, cardValidityYear)) {
-                // Handle registration here
+                //TODO:Don't know how to add an ID here - Context
+                //Controller.registerCustomer(, name, nif, cardType, cardNumber, cardValidityMonth)
                 showToast("Registration Successful")
             } else {
-                //showToast("Please fill in all fields correctly")
+                showToast("Please fill in all fields correctly")
             }
         }
 

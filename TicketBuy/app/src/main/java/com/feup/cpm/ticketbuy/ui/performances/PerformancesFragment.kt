@@ -11,9 +11,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import android.app.AlertDialog
+import androidx.fragment.app.activityViewModels
+import com.feup.cpm.ticketbuy.ui.tickets.TicketsViewModel
+import androidx.lifecycle.ViewModelProvider
 
 class PerformancesFragment : Fragment() {
 
+    private val viewModel: TicketsViewModel by activityViewModels()
     data class Performance(val title: String, val date: String, val price: Int)
 
     override fun onCreateView(
@@ -72,7 +76,7 @@ class PerformancesFragment : Fragment() {
             val numTickets = ticketsEditText.text.toString().toIntOrNull() ?: 0
             if (numTickets > 0 && numTickets <= 4) {
                 val totalCost = numTickets * performance.price.toInt()
-                showConfirmationDialog(performance.title, numTickets, totalCost)
+                showConfirmationDialog(performance.title, numTickets, totalCost, performance)
             } else {
                 showToast("Please enter a valid number of tickets (1-4) for ${performance.title}")
             }
@@ -82,12 +86,13 @@ class PerformancesFragment : Fragment() {
         return performanceLayout
     }
 
-    private fun showConfirmationDialog(title: String, numTickets: Int, totalCost: Int) {
+    private fun showConfirmationDialog(title: String, numTickets: Int, totalCost: Int, performance: Performance) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Confirm Purchase")
             .setMessage("Do you want to buy $numTickets ticket(s) for $title? Total cost: $totalCost€")
             .setPositiveButton("Yes") { dialog, _ ->
                 showToast("Buying $numTickets ticket(s) for $title. Total cost: $totalCost€")
+                viewModel.addTicket(performance)
                 dialog.dismiss()
             }
             .setNegativeButton("No") { dialog, _ ->

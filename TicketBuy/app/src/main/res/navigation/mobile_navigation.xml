@@ -10,23 +10,21 @@
         android:name="com.feup.cpm.ticketbuy.ui.home.HomeFragment"
         android:label="@string/menu_home"
         tools:layout="@layout/fragment_home" />
-
     <fragment
         android:id="@+id/nav_gallery"
         android:name="com.feup.cpm.ticketbuy.ui.gallery.GalleryFragment"
         android:label="@string/menu_gallery"
         tools:layout="@layout/fragment_gallery" />
-
-    <fragment
-        android:id="@+id/nav_slideshow"
-        android:name="com.feup.cpm.ticketbuy.ui.slideshow.SlideshowFragment"
-        android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
     <fragment
         android:id="@+id/nav_register"
         android:name="com.feup.cpm.ticketbuy.ui.register.RegisterFragment"
         android:label="@string/menu_register"
         tools:layout="@layout/fragment_register" />
+    <fragment
+        android:id="@+id/nav_tickets"
+        android:name="com.feup.cpm.ticketbuy.ui.tickets.TicketsFragment"
+        android:label="@string/menu_tickets"
+        tools:layout="@layout/fragment_tickets" />
     <fragment
         android:id="@+id/nav_performances"
         android:name="com.feup.cpm.ticketbuy.ui.performances.PerformancesFragment"

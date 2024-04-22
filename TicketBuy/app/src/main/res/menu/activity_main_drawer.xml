@@ -13,10 +13,6 @@
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/menu_gallery" />
         <item
-            android:id="@+id/nav_slideshow"
-            android:icon="@drawable/ic_menu_slideshow"
-            android:title="@string/menu_slideshow" />
-        <item
             android:id="@+id/nav_register"
             android:icon="@drawable/ic_menu_slideshow"
             android:title="@string/menu_register" />
@@ -24,5 +20,9 @@
             android:id="@+id/nav_performances"
             android:icon="@drawable/ic_menu_slideshow"
             android:title="@string/menu_performances"/>
+        <item
+            android:id="@+id/nav_tickets"
+            android:icon="@drawable/side_nav_bar"
+            android:title="@string/menu_tickets" />
     </group>
 </menu>

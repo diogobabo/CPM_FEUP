@@ -140,8 +140,6 @@ object Controller {
 
     // Function to get next performances
     fun getNextPerformances(): List<Performance> {
-        val performances = mutableListOf<Performance>()
-
         // Get from the server
         val url = "$serverURL/performances"
 

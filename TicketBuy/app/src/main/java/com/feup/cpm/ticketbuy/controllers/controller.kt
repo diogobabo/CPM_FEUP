@@ -170,14 +170,14 @@ object Controller {
         // Get from the server
         val url = "$serverURL/performances"
 
-
+/*
         val performance = Performance(0, "performance1", "24/05", 8.0)
         val performanceList = mutableListOf<Performance>()
         performanceList.add(performance)
         performances.postValue(performanceList.toList())
+*/
 
-
-        /*val urlObj = URL(url)
+        val urlObj = URL(url)
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 with(urlObj.openConnection() as HttpURLConnection) {
@@ -195,12 +195,13 @@ object Controller {
                     val performanceList = mutableListOf<Performance>()
                     for (i in 0 until performancesJson.length()) {
                         val performanceJson = performancesJson.getJSONObject(i)
-                        /*val performance = Performance(
+                        val performance = Performance(
                             performanceJson.getInt("performance_id"),
                             performanceJson.getString("name"),
                             performanceJson.getString("date"),
                             performanceJson.getString("price").toDouble()
-                        )*/
+                        )
+                        performanceList.add(performance)
                     }
                     performances.postValue(performanceList.toList())
                     println("getNextPerformances: $performances")
@@ -208,7 +209,7 @@ object Controller {
             } catch (e: Exception) {
                 println("getNextPerformances error: $e")
             }
-        }*/
+        }
     }
 
     // Function to purchase tickets

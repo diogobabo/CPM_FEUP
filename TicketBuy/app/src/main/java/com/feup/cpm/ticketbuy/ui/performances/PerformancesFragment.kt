@@ -71,18 +71,7 @@ class PerformancesFragment : Fragment() {
 
         val priceTextView = performanceLayout.findViewById<TextView>(R.id.priceTextView)
         priceTextView.text = performance.price.toString() + "€"
-/*
-        val ticketsLayout = LinearLayout(requireContext())
-        ticketsLayout.orientation = LinearLayout.HORIZONTAL
-        val ticketsTextView = TextView(requireContext())
-        ticketsTextView.text = "Tickets: "
-        val ticketsEditText = EditText(requireContext())
-        ticketsEditText.hint = "Enter number"
-        ticketsEditText.inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        ticketsLayout.addView(ticketsTextView)
-        ticketsLayout.addView(ticketsEditText)
-        performanceLayout.addView(ticketsLayout)
-*/
+
         val buyButton = performanceLayout.findViewById<Button>(R.id.buyButton)
         buyButton.setOnClickListener {
             val numTickets = performanceLayout.findViewById<EditText>(R.id.ticketsEditText).text.toString().toIntOrNull() ?: 0

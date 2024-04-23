@@ -12,17 +12,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import android.app.AlertDialog
-import androidx.fragment.app.activityViewModels
-import com.feup.cpm.ticketbuy.ui.tickets.TicketsViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.feup.cpm.ticketbuy.R
 import com.feup.cpm.ticketbuy.controllers.Controller
 import com.feup.cpm.ticketbuy.models.Item
-import com.feup.cpm.ticketbuy.models.Performance
 
 class CafeteriaFragment : Fragment() {
 
-    //private val viewModel: TicketsViewModel by activityViewModels()
     private var controller = Controller
     private lateinit var rootLayout: LinearLayout
 

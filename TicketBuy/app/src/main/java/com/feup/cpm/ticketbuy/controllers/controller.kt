@@ -31,7 +31,7 @@ object Controller {
     val transactions = MutableLiveData<List<Transaction>>()
     val orders = MutableLiveData<List<Order>>()
     val items = MutableLiveData<List<Item>>()
-    private var userID = String()
+    var userID = String()
 
     private const val CUSTOMER_PREF_KEY = "TicketBuyCustomer"
 
@@ -170,7 +170,7 @@ object Controller {
         // Get from the server
         val url = "$serverURL/performances"
 
-/*
+        /*
         val performance = Performance(0, "performance1", "24/05", 8.0)
         val performanceList = mutableListOf<Performance>()
         performanceList.add(performance)
@@ -325,7 +325,7 @@ object Controller {
         // Get from the server
         val url = "$serverURL/items"
 
-
+        /*
         val item1 = Item(0, "pao", 50, 0.15)
         val item2 = Item(1, "bolo", 20, 2.00)
         val item3 = Item(2, "sumo", 30, 1.20)
@@ -337,8 +337,8 @@ object Controller {
         itemsList.add(item3)
         itemsList.add(item4)
         items.postValue(itemsList.toList())
-
-        /*val urlObj = URL(url)
+*/
+        val urlObj = URL(url)
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 with(urlObj.openConnection() as HttpURLConnection) {
@@ -353,15 +353,16 @@ object Controller {
 
                     // Parse the response
                     val itemsJson = JSONArray(response)
-                    val itemsList = mutableListOf<Items>()
+                    val itemsList = mutableListOf<Item>()
                     for (i in 0 until itemsJson.length()) {
-                        val itemsJson = itemsJson.getJSONObject(i)
-                        /*val item = Item(
-                            itemsJson.getInt("item_id"),
-                            itemsJson.getString("name"),
-                            itemsJson.getString("quantity"),
-                            itemsJson.getString("price").toDouble()
-                        )*/
+                        val itemJson = itemsJson.getJSONObject(i)
+                        val item = Item(
+                            itemJson.getInt("item_id"),
+                            itemJson.getString("name"),
+                            itemJson.getString("quantity").toInt(),
+                            itemJson.getString("price").toDouble()
+                        )
+                        itemsList.add(item)
                     }
                     items.postValue(itemsList.toList())
                     println("getCafeteriaItems: $items")
@@ -369,11 +370,12 @@ object Controller {
             } catch (e: Exception) {
                 println("getCafeteriaItems error: $e")
             }
-        }*/
+        }
     }
-    /*
+
     // Function to make cafeteria order
-    fun makeCafeteriaOrder(items: List<Item>, vouchers: List<Voucher>): Int {
+    @OptIn(DelicateCoroutinesApi::class)
+    fun makeCafeteriaOrder(items: List<Item>, vouchers: List<Voucher>) {
         val url = "$serverURL/make-cafeteria-order"
 
         val urlObj = URL(url)
@@ -386,40 +388,49 @@ object Controller {
         val signature = singData(json.toString().toByteArray())
         json.put("signature", signature)
 
-        try {
-            with(urlObj.openConnection() as HttpURLConnection) {
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("charset", "utf-8")
-                setRequestProperty("Content-Length", json.toString().toByteArray().size.toString())
-                outputStream.write(json.toString().toByteArray())
-                val response = readStream(inputStream)
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                with(urlObj.openConnection() as HttpURLConnection) {
+                    requestMethod = "POST"
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("charset", "utf-8")
+                    setRequestProperty(
+                        "Content-Length",
+                        json.toString().toByteArray().size.toString()
+                    )
+                    outputStream.write(json.toString().toByteArray())
+                    val response = readStream(inputStream)
 
-                // Parse the response
-                val responseJson = JSONObject(response)
-                if (responseJson.has("error")) {
-                    println("makeCafeteriaOrder: ${responseJson.getString("error")}")
-                    return -1
-                } else {
-                    if (responseJson.has("order_id")) {
-                        val order = Order(
-                            responseJson.getInt("order_id"),
-                            responseJson.getString("user_id"),
-                            responseJson.getString("order_date"),
-                            items
-                        )
-                        orders.add(order)
+                    val responseCode = responseCode
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        println("getCafeteriaItems error: $responseCode")
+                        return@launch
                     }
-                    return responseJson.getInt("order_id")
+
+                    // Parse the response
+                    val responseJson = JSONObject(response)
+                    if (responseJson.has("error")) {
+                        println("makeCafeteriaOrder error: ${responseJson.getString("error")}")
+                        return@launch
+                    } else {
+                        if (responseJson.has("order_id")) {
+                            val order = Order(
+                                responseJson.getInt("order_id"),
+                                responseJson.getString("user_id"),
+                                responseJson.getString("order_date"),
+                                items
+                            )
+                            orders.postValue(orders.value?.plus(order))
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                println("makeCafeteriaOrder: ${e.message}")
             }
-        } catch (e: Exception) {
-            println("makeCafeteriaOrder: ${e.message}")
-            return -1
         }
     }
-
+/*
     // Function to validate vouchers and pay an order
     fun validateVouchersAndPayOrder(ordered_products: List<String>, vouchers: List<String>): Double {
         return 0.0

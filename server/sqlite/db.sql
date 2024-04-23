@@ -99,10 +99,13 @@ VALUES
     ('1', 'Ticket Purchase', '2024-04-10', 25.00),
     ('2', 'Ticket Purchase', '2024-04-12', 30.00);
 
+
 INSERT INTO Intems (name, quantity, price)
 VALUES 
     ('Coke', 2, 1.50),
-    ('Popcorn', 1, 2.00);
+    ('Popcorn', 1, 2.00),
+    ('Chocolate', 23, 1.50),
+    ('Chips', 100, 2.00);
 
 INSERT INTO Orders (order_id, user_id, order_date, intem)
 VALUES

@@ -514,6 +514,18 @@ const validateVouchersAndPayOrder = (req, res) => {
     res.status(200).json({ validated: true, final_price: finalPrice, accepted_vouchers: acceptedVouchers });
 };
 
+const getItems = (req, res) => {
+    db.all(`SELECT * FROM Intems`, [], (err, rows) => {
+        if (err) {
+            console.error('Error retrieving items:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        res.status(200).json(rows);
+    });
+}
+
+
 // Export controller functions
 module.exports = {
     registerCustomer,
@@ -522,5 +534,6 @@ module.exports = {
     validateTickets,
     makeCafeteriaOrder,
     consultTransactions,
-    validateVouchersAndPayOrder
+    validateVouchersAndPayOrder,
+    getItems
 };

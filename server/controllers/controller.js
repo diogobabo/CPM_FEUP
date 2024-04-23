@@ -13,12 +13,11 @@ const db = new sqlite3.Database('./sqlite/db.db', (err) => {
 
 
 // Function to verify signature
-const verifySignature = (user_id, signature) => {
+async function verifySignature (data, user_id, signature) {
     // Fetch the user's public key from the database based on the user_id
-    const publicKey = fetchPublicKey(user_id); // Implement function to fetch public key from database
+    const publicKey = await fetchPublicKey(user_id); // Implement function to fetch public key from database
 
-    // Extract the data that was signed from the user_id
-    const data = user_id;
+    console.log(publicKey);
 
     // Verify the signature
     const verifier = crypto.createVerify('RSA-SHA256');
@@ -30,14 +29,15 @@ const verifySignature = (user_id, signature) => {
 };
 
 // Example function to fetch public key from database
-const fetchPublicKey = (user_id) => {
-    db.get('SELECT public_key FROM Customers WHERE user_id = ?', [user_id], (err, row) => {
+async function fetchPublicKey (user_id) {
+    const publicKey = db.get('SELECT * FROM Customers WHERE user_id = ?', [user_id], (err, row) => {
         if (err) {
             console.error('Error fetching public key:', err);
             return null;
         }
         return row.public_key;
-    });
+    }).wait();
+    return publicKey;
 };
 
 // Controller functions
@@ -45,7 +45,7 @@ const fetchPublicKey = (user_id) => {
 const registerCustomer = (req, res) => {
     // Extract data from request body
     console.log(req.body);
-    const { name, nif, credit_card_type, credit_card_number, credit_card_validity, public_key } = req.body;
+    const { name, nif, creditCardType, creditCardNumber, creditCardValidity, publicKey } = req.body;
 
     // Generate user id and private key
     const user_id = uuid.v4();
@@ -53,12 +53,13 @@ const registerCustomer = (req, res) => {
     // Insert customer data into database
     const sql = `INSERT INTO Customers (user_id, name, nif, credit_card_type, credit_card_number, credit_card_validity, public_key)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    db.run(sql, [user_id, name, nif, credit_card_type, credit_card_number, credit_card_validity, public_key], (err) => {
+    db.run(sql, [user_id, name, nif, creditCardType, creditCardNumber, creditCardValidity, publicKey], (err) => {
         if (err) {
             console.error('Error registering customer:', err);
             res.status(500).json({ error: 'Internal Server Error' });
         } else {
-            res.status(200).json({ user_id });
+            console.log('Customer registered successfully');
+            res.status(200).json({ user_id: user_id });
         }
     });
 };
@@ -79,10 +80,11 @@ const getNextPerformances = (req, res) => {
 
 const purchaseTickets = (req, res) => {
     // Extract data from request body
+    
     const { performance_id ,performance_date, number_of_tickets, user_id, signature } = req.body;
-
+    const jsondata = JSON.stringify({performance_id ,performance_date, number_of_tickets, user_id});
     // Validate the user signature
-    if (!verifySignature(user_id, signature)) {
+    if (!verifySignature(jsondata.toString(),user_id, signature)) {
         return res.status(400).json({ error: 'Invalid signature' });
     }
 
@@ -145,7 +147,7 @@ const purchaseTickets = (req, res) => {
                     }
                     
                     // Return success response with tickets and vouchers
-                    res.status(200).json({ tickets, vouchers, total_price });
+                    res.status(200).json({ "tickets":tickets, "vouchers":vouchers, "total_price":total_price });
                 });
             });
         });

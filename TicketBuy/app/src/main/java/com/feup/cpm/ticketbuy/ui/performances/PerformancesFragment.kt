@@ -108,6 +108,7 @@ class PerformancesFragment : Fragment() {
             .setPositiveButton("Yes") { dialog, _ ->
                 showToast("Buying $numTickets ticket(s) for $title. Total cost: $totalCost€")
                 viewModel.addTicket(performance)
+                controller.purchaseTickets(performance.performanceId,performance.date,numTickets)
                 dialog.dismiss()
             }
             .setNegativeButton("No") { dialog, _ ->

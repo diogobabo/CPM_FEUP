@@ -206,11 +206,12 @@ object Controller {
     }
 
     // Function to purchase tickets
+    @OptIn(DelicateCoroutinesApi::class)
     fun purchaseTickets(
         performanceId: Int,
         performanceDate: String,
         numTickets: Int
-    ): List<Ticket>? {
+    ) {
 
         // Post to the server
         val url = "$serverURL/purchase-tickets"
@@ -224,44 +225,46 @@ object Controller {
 
         val signature = singData(json.toString().toByteArray())
         json.put("signature", signature)
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                with(urlObj.openConnection() as HttpURLConnection) {
+                    requestMethod = "POST"
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("charset", "utf-8")
+                    setRequestProperty(
+                        "Content-Length",
+                        json.toString().toByteArray().size.toString()
+                    )
+                    outputStream.write(json.toString().toByteArray())
+                    val response = readStream(inputStream)
 
-        try {
-            with(urlObj.openConnection() as HttpURLConnection) {
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("charset", "utf-8")
-                setRequestProperty("Content-Length", json.toString().toByteArray().size.toString())
-                outputStream.write(json.toString().toByteArray())
-                val response = readStream(inputStream)
+                    // Parse the response
+                    val responseJson = JSONObject(response)
+                    if (responseJson.has("error")) {
+                        println("purchaseTickets: ${responseJson.getString("error")}")
+                    } else {
+                        val ticketsJson = responseJson.getJSONArray("tickets")
+                        val ticketsList = mutableListOf<Ticket>()
+                        for (i in 0 until ticketsJson.length()) {
+                            val ticketJson = ticketsJson.getJSONObject(i)
+                            val ticket = Ticket(
+                                ticketJson.getString("ticket_id"),
+                                ticketJson.getString("performance_id").toInt(),
+                                ticketJson.getString("user_id"),
+                                ticketJson.getString("place_in_room"),
+                                false
+                            )
+                            ticketsList.add(ticket)
+                        }
+                        allTickets.postValue(ticketsList.toList())
+                        println("purchaseTickets: ${allTickets.value}")
 
-                // Parse the response
-                val responseJson = JSONObject(response)
-                if (responseJson.has("error")) {
-                    println("purchaseTickets: ${responseJson.getString("error")}")
-                    return null
-                } else {
-                    val ticketsJson = responseJson.getJSONArray("tickets")
-                    val ticketsList = mutableListOf<Ticket>()
-                    for (i in 0 until ticketsJson.length()) {
-                        val ticketJson = ticketsJson.getJSONObject(i)
-                        val ticket = Ticket(
-                            ticketJson.getString("ticket_id"),
-                            ticketJson.getString("performance_id").toInt(),
-                            ticketJson.getString("user_id"),
-                            ticketJson.getString("place_in_room"),
-                            false
-                        )
-                        ticketsList.add(ticket)
                     }
-                    allTickets.postValue(ticketsList.toList())
-
-                    return ticketsList
                 }
+            } catch (e: Exception) {
+                println("purchaseTickets: ${e.message}")
             }
-        } catch (e: Exception) {
-            println("purchaseTickets: ${e.message}")
-            return null
         }
     }
 

@@ -12,16 +12,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import android.app.AlertDialog
-import androidx.fragment.app.activityViewModels
-import com.feup.cpm.ticketbuy.ui.tickets.TicketsViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.feup.cpm.ticketbuy.R
 import com.feup.cpm.ticketbuy.controllers.Controller
 import com.feup.cpm.ticketbuy.models.Performance
 
 class PerformancesFragment : Fragment() {
 
-    private val viewModel: TicketsViewModel by activityViewModels()
     private var controller = Controller
     private lateinit var rootLayout: LinearLayout
 
@@ -107,8 +103,7 @@ class PerformancesFragment : Fragment() {
             .setMessage("Do you want to buy $numTickets ticket(s) for $title? Total cost: $totalCost€")
             .setPositiveButton("Yes") { dialog, _ ->
                 showToast("Buying $numTickets ticket(s) for $title. Total cost: $totalCost€")
-                viewModel.addTicket(performance)
-                controller.purchaseTickets(performance.performanceId,performance.date,numTickets)
+                controller.purchaseTickets(performance,numTickets)
                 dialog.dismiss()
             }
             .setNegativeButton("No") { dialog, _ ->

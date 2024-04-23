@@ -18,7 +18,7 @@ data class Performance(
 
 data class Ticket(
     val ticketId: String,
-    val performanceId: Int,
+    val performance: Performance,
     val userId: String,
     val placeInRoom: String,
     var isUsed: Boolean = false

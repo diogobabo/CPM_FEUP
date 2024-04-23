@@ -71,19 +71,23 @@ object KeyManager {
     }
     // Function to get the public key
     fun getPublicKey(): String? {
+        if(this.keyPair == null) {
+            generateAndStoreKeys()
+        }
         val publicKey = this.keyPair?.public as? RSAPublicKey ?: return null
         val encodedPublicKey = publicKey.encoded
         return Base64.encodeToString(encodedPublicKey, Base64.DEFAULT)
     }
 
     // Function to sing data
-    fun singData(data: ByteArray): ByteArray? {
-        val signature = java.security.Signature.getInstance(SIGN_ALGO)
+    fun singData(data: ByteArray): String? {
         if (keyPair == null) {
-            return null
+            generateAndStoreKeys()
         }
+        val signature = java.security.Signature.getInstance(SIGN_ALGO)
         signature.initSign(keyPair?.private)
         signature.update(data)
-        return signature.sign()
+        val signatureBytes = signature.sign()
+        return Base64.encodeToString(signatureBytes, Base64.DEFAULT)
     }
 }

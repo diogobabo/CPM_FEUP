@@ -18,8 +18,8 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import org.json.JSONArray
 
 //Server URL 10.227.157.133
-//val serverURL = "http://192.168.1.87:3000"
-val serverURL = "http://192.168.176.45:3000"
+val serverURL = "http://192.168.1.87:3000"
+//val serverURL = "http://192.168.176.45:3000"
 
 
 
@@ -208,8 +208,7 @@ object Controller {
     // Function to purchase tickets
     @OptIn(DelicateCoroutinesApi::class)
     fun purchaseTickets(
-        performanceId: Int,
-        performanceDate: String,
+        performance: Performance,
         numTickets: Int
     ) {
 
@@ -219,8 +218,8 @@ object Controller {
 
         val json = JSONObject()
         json.put("user_id", userID)
-        json.put("performance_id", performanceId)
-        json.put("performance_date", performanceDate)
+        json.put("performance_id", performance.performanceId)
+        json.put("performance_date", performance.date)
         json.put("number_of_tickets", numTickets)
 
         val signature = singData(json.toString().toByteArray())
@@ -237,30 +236,36 @@ object Controller {
                         json.toString().toByteArray().size.toString()
                     )
                     outputStream.write(json.toString().toByteArray())
+                    val responseCode = responseCode
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        println("purchaseTickets error: $responseCode")
+                        return@launch
+                    }
+
                     val response = readStream(inputStream)
 
                     // Parse the response
                     val responseJson = JSONObject(response)
-                    if (responseJson.has("error")) {
-                        println("purchaseTickets: ${responseJson.getString("error")}")
-                    } else {
-                        val ticketsJson = responseJson.getJSONArray("tickets")
-                        val ticketsList = mutableListOf<Ticket>()
-                        for (i in 0 until ticketsJson.length()) {
-                            val ticketJson = ticketsJson.getJSONObject(i)
-                            val ticket = Ticket(
-                                ticketJson.getString("ticket_id"),
-                                ticketJson.getString("performance_id").toInt(),
-                                ticketJson.getString("user_id"),
-                                ticketJson.getString("place_in_room"),
-                                false
-                            )
-                            ticketsList.add(ticket)
-                        }
-                        allTickets.postValue(ticketsList.toList())
-                        println("purchaseTickets: ${allTickets.value}")
 
+                    val ticketsJson = responseJson.getJSONArray("tickets")
+                    val ticketsList = mutableListOf<Ticket>()
+                    ticketsList.addAll(allTickets.value ?: emptyList())
+
+                    for (i in 0 until ticketsJson.length()) {
+                        val ticketJson = ticketsJson.getJSONObject(i)
+                        val ticket = Ticket(
+                            ticketJson.getString("ticket_id"),
+                            performance,
+                            ticketJson.getString("user_id"),
+                            ticketJson.getString("place_in_room"),
+                            false
+                        )
+                        ticketsList.add(ticket)
                     }
+                    allTickets.postValue(ticketsList.toList())
+                    println("purchaseTickets: ${allTickets.value}")
+
+
                 }
             } catch (e: Exception) {
                 println("purchaseTickets: ${e.message}")

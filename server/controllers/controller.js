@@ -15,30 +15,44 @@ const db = new sqlite3.Database('./sqlite/db.db', (err) => {
 // Function to verify signature
 async function verifySignature (data, user_id, signature) {
     // Fetch the user's public key from the database based on the user_id
-    const publicKey = await fetchPublicKey(user_id); // Implement function to fetch public key from database
 
-    console.log(publicKey);
+    const publicKeyBase64 = await fetchPublicKey(user_id); // Implement function to fetch public key from database
+
+    const pemKey = `-----BEGIN PUBLIC KEY-----
+${publicKeyBase64}-----END PUBLIC KEY-----`;
 
     // Verify the signature
     const verifier = crypto.createVerify('RSA-SHA256');
     verifier.update(data);
 
-    const isVerified = verifier.verify(publicKey, signature, 'base64');
-    
-    return isVerified;
+    try {
+        const isVerified = verifier.verify(pemKey, signature, 'base64');
+        console.log('Signature verified:', isVerified);
+        return isVerified;
+    } catch (err) {
+        console.error('Error verifying signature:', err);
+        return false;
+}
 };
 
 // Example function to fetch public key from database
-async function fetchPublicKey (user_id) {
-    const publicKey = db.get('SELECT * FROM Customers WHERE user_id = ?', [user_id], (err, row) => {
-        if (err) {
-            console.error('Error fetching public key:', err);
-            return null;
-        }
-        return row.public_key;
-    }).wait();
-    return publicKey;
-};
+function fetchPublicKey(user_id) {
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM Customers WHERE user_id = ?', [user_id], (err, row) => {
+            if (err) {
+                console.error('Error fetching public key:', err);
+                reject(err);
+                return;
+            }
+            
+            if (row) {
+                resolve(row.public_key);
+            } else {
+                resolve(null); // Return null if public key not found
+            }
+        });
+    });
+}
 
 // Controller functions
 
@@ -78,13 +92,15 @@ const getNextPerformances = (req, res) => {
     });
 };
 
-const purchaseTickets = (req, res) => {
+async function purchaseTickets (req, res) {
     // Extract data from request body
-    
+
     const { performance_id ,performance_date, number_of_tickets, user_id, signature } = req.body;
-    const jsondata = JSON.stringify({performance_id ,performance_date, number_of_tickets, user_id});
-    // Validate the user signature
-    if (!verifySignature(jsondata.toString(),user_id, signature)) {
+    const jsondata = JSON.stringify({user_id, performance_id ,performance_date, number_of_tickets});
+    const jsonByteArray = Buffer.from(jsondata);
+
+    const isSignatureValid = await verifySignature(jsonByteArray, user_id, signature);
+    if (!isSignatureValid) {
         return res.status(400).json({ error: 'Invalid signature' });
     }
 

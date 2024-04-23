@@ -1,5 +1,6 @@
 package com.feup.cpm.ticketbuy.ui.performances
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,51 +15,67 @@ import android.app.AlertDialog
 import androidx.fragment.app.activityViewModels
 import com.feup.cpm.ticketbuy.ui.tickets.TicketsViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.feup.cpm.ticketbuy.R
+import com.feup.cpm.ticketbuy.controllers.Controller
+import com.feup.cpm.ticketbuy.models.Performance
 
 class PerformancesFragment : Fragment() {
 
     private val viewModel: TicketsViewModel by activityViewModels()
-    data class Performance(val title: String, val date: String, val price: Int)
+    private var controller = Controller
+    private lateinit var rootLayout: LinearLayout
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val rootLayout = LinearLayout(requireContext())
+        rootLayout = LinearLayout(requireContext())
         rootLayout.orientation = LinearLayout.VERTICAL
 
-        val performances = listOf(
-            Performance("Performance Title 1", "Performance Date 1", 100),
-            Performance("Performance Title 2", "Performance Date 2", 120),
-            Performance("Performance Title 3", "Performance Date 3", 80),
-            Performance("Performance Title 4", "Performance Date 4", 90)
-        )
-
-        performances.forEach { performance ->
+        controller.performances.value?.forEach { performance ->
             val performanceLayout = createPerformanceLayout(inflater, container, performance)
             rootLayout.addView(performanceLayout)
         }
 
         return rootLayout
     }
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
+        // Observe changes to performances LiveData
+        controller.performances.observe(viewLifecycleOwner) { updatedPerformances ->
+            // Clear existing views
+            rootLayout.removeAllViews()
+
+            // Add new performance views
+            updatedPerformances.forEach { performance ->
+                val performanceLayout = createPerformanceLayout(
+                    LayoutInflater.from(context),
+                    null,
+                    performance
+                )
+                rootLayout.addView(performanceLayout)
+            }
+        }
+
+        // Trigger fetching performances
+        controller.getNextPerformances()
+    }
+    @SuppressLint("SetTextI18n")
     private fun createPerformanceLayout(inflater: LayoutInflater, container: ViewGroup?, performance: Performance): View {
-        val performanceLayout = LinearLayout(requireContext())
+        val performanceLayout = inflater.inflate(R.layout.performance_item, null, false) as LinearLayout
         performanceLayout.orientation = LinearLayout.VERTICAL
 
-        val titleTextView = TextView(requireContext())
-        titleTextView.text = performance.title
-        performanceLayout.addView(titleTextView)
+        val titleTextView = performanceLayout.findViewById<TextView>(R.id.titleTextView)
+        titleTextView.text = performance.name
 
-        val dateTextView = TextView(requireContext())
+        val dateTextView = performanceLayout.findViewById<TextView>(R.id.dateTextView)
         dateTextView.text = performance.date
-        performanceLayout.addView(dateTextView)
 
-        val priceTextView = TextView(requireContext())
+        val priceTextView = performanceLayout.findViewById<TextView>(R.id.priceTextView)
         priceTextView.text = performance.price.toString() + "€"
-        performanceLayout.addView(priceTextView)
-
+/*
         val ticketsLayout = LinearLayout(requireContext())
         ticketsLayout.orientation = LinearLayout.HORIZONTAL
         val ticketsTextView = TextView(requireContext())
@@ -69,19 +86,17 @@ class PerformancesFragment : Fragment() {
         ticketsLayout.addView(ticketsTextView)
         ticketsLayout.addView(ticketsEditText)
         performanceLayout.addView(ticketsLayout)
-
-        val buyButton = Button(requireContext())
-        buyButton.text = "Buy Tickets"
+*/
+        val buyButton = performanceLayout.findViewById<Button>(R.id.buyButton)
         buyButton.setOnClickListener {
-            val numTickets = ticketsEditText.text.toString().toIntOrNull() ?: 0
-            if (numTickets > 0 && numTickets <= 4) {
+            val numTickets = performanceLayout.findViewById<EditText>(R.id.ticketsEditText).text.toString().toIntOrNull() ?: 0
+            if (numTickets in 1..4) {
                 val totalCost = numTickets * performance.price.toInt()
-                showConfirmationDialog(performance.title, numTickets, totalCost, performance)
+                showConfirmationDialog(performance.name, numTickets, totalCost, performance)
             } else {
-                showToast("Please enter a valid number of tickets (1-4) for ${performance.title}")
+                showToast("Please enter a valid number of tickets (1-4) for ${performance.name}")
             }
         }
-        performanceLayout.addView(buyButton)
 
         return performanceLayout
     }

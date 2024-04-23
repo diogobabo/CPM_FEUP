@@ -1,5 +1,6 @@
 package com.feup.cpm.ticketbuy.ui.tickets
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -21,6 +22,7 @@ class TicketsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val ticketsViewModel: TicketsViewModel by activityViewModels()
+    @SuppressLint("SetTextI18n")
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -30,9 +32,9 @@ class TicketsFragment : Fragment() {
         val rootLayout: View = binding.root
 
         val textView: TextView = binding.textTickets
-        ticketsViewModel.boughtTicketsList?.forEachIndexed { index, performance ->
+        ticketsViewModel.boughtTicketsList.forEachIndexed { index, performance ->
             ticketsViewModel.text.observe(viewLifecycleOwner) {
-                textView.text = ("Ticket $index: ${performance.title}, ${performance.date}, ${performance.price}€")
+                textView.text = ("Ticket $index: ${performance.name}, ${performance.date}, ${performance.price}€")
             }
         }
 

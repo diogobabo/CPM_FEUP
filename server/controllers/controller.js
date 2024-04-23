@@ -65,12 +65,13 @@ const registerCustomer = (req, res) => {
 
 const getNextPerformances = (req, res) => {
     // Retrieve next performances from database
-    const sql = `SELECT * FROM Performances WHERE date >= date('now') LIMIT 4`;
+    const sql = `SELECT * FROM Performances LIMIT 4`;
     db.all(sql, (err, rows) => {
         if (err) {
             console.error('Error retrieving performances:', err);
             res.status(500).json({ error: 'Internal Server Error' });
         } else {
+            console.log(rows);
             res.status(200).json(rows);
         }
     });

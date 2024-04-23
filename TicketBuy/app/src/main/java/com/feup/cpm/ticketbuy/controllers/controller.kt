@@ -10,23 +10,27 @@ import java.net.HttpURLConnection
 import java.net.URL
 import android.content.Context
 import android.content.Intent
+import androidx.lifecycle.MutableLiveData
 import com.feup.cpm.ticketbuy.MainActivity
 import com.feup.cpm.ticketbuy.controllers.cypher.KeyManager.singData
 import com.feup.cpm.ticketbuy.models.*
 import kotlinx.coroutines.DelicateCoroutinesApi
+import org.json.JSONArray
 
-//Server URL
-val serverURL = "http://192.168.1.87:3000"
+//Server URL 10.227.157.133
+//val serverURL = "http://192.168.1.87:3000"
+val serverURL = "http://192.168.176.45:3000"
+
 
 
 object Controller {
     // Initialize database collections
-    val performances = mutableListOf<Performance>()
-    val allTickets = mutableListOf<Ticket>()
-    val vouchers = mutableListOf<Voucher>()
-    val transactions = mutableListOf<Transaction>()
-    val orders = mutableListOf<Order>()
-    val items = mutableListOf<Item>()
+    val performances = MutableLiveData<List<Performance>>()
+    val allTickets = MutableLiveData<List<Ticket>>()
+    val vouchers = MutableLiveData<List<Voucher>>()
+    val transactions = MutableLiveData<List<Transaction>>()
+    val orders = MutableLiveData<List<Order>>()
+    val items = MutableLiveData<List<Item>>()
     private var userID = String()
 
     private const val CUSTOMER_PREF_KEY = "TicketBuyCustomer"
@@ -54,10 +58,9 @@ object Controller {
         val response = StringBuilder()
         try {
             reader = BufferedReader(InputStreamReader(input))
-            while (reader.readLine().also{ line = it } != null)
+            while (reader.readLine().also { line = it } != null)
                 response.append(line)
-        }
-        catch (e: IOException) {
+        } catch (e: IOException) {
             response.clear()
             response.append("readStream: ${e.message}")
         }
@@ -75,7 +78,7 @@ object Controller {
         creditCardNumber: String,
         creditCardValidity: String,
     ) {
-        
+
         // Post to the server
         val url = "$serverURL/register"
         val urlObj = URL(url)
@@ -138,6 +141,7 @@ object Controller {
             }
         }
     }
+
     private fun restartApp(context: Context) {
         val intent = Intent(context, MainActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -161,47 +165,52 @@ object Controller {
     }
 
     // Function to get next performances
-    fun getNextPerformances(): List<Performance> {
+    @OptIn(DelicateCoroutinesApi::class)
+    fun getNextPerformances() {
         // Get from the server
         val url = "$serverURL/performances"
 
         val urlObj = URL(url)
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                with(urlObj.openConnection() as HttpURLConnection) {
+                    requestMethod = "GET"
+                    val response = readStream(inputStream)
 
-        try {
-            with(urlObj.openConnection() as HttpURLConnection) {
-                requestMethod = "GET"
-                val response = readStream(inputStream)
+                    val responseCode = responseCode
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        println("getNextPerformances error: $responseCode")
+                        return@launch
+                    }
 
-                // Parse the response
-                val responseJson = JSONObject(response)
-                if (responseJson.has("error")) {
-                    println("getNextPerformances: ${responseJson.getString("error")}")
-                    return emptyList()
-                } else {
-                    val performancesJson = responseJson.getJSONArray("performances")
+                    // Parse the response
+                    val performancesJson = JSONArray(response)
+                    val performanceList = mutableListOf<Performance>()
                     for (i in 0 until performancesJson.length()) {
                         val performanceJson = performancesJson.getJSONObject(i)
                         val performance = Performance(
-                            performanceJson.getString("id").toInt(),
+                            performanceJson.getInt("performance_id"),
                             performanceJson.getString("name"),
                             performanceJson.getString("date"),
                             performanceJson.getString("price").toDouble()
                         )
-                        performances.add(performance)
+                        performanceList.add(performance)
                     }
-
-                    return performances
+                    performances.postValue(performanceList.toList())
+                    println("getNextPerformances: $performances")
                 }
+            } catch (e: Exception) {
+                println("getNextPerformances error: $e")
             }
-        } catch (e: Exception) {
-            println("getNextPerformances: ${e.message}")
-            return emptyList()
         }
     }
 
     // Function to purchase tickets
-    fun purchaseTickets(performanceId: Int, performanceDate: String, numTickets: Int): List<Ticket>? {
-        val tickets = mutableListOf<Ticket>()
+    fun purchaseTickets(
+        performanceId: Int,
+        performanceDate: String,
+        numTickets: Int
+    ): List<Ticket>? {
 
         // Post to the server
         val url = "$serverURL/purchase-tickets"
@@ -233,6 +242,7 @@ object Controller {
                     return null
                 } else {
                     val ticketsJson = responseJson.getJSONArray("tickets")
+                    val ticketsList = mutableListOf<Ticket>()
                     for (i in 0 until ticketsJson.length()) {
                         val ticketJson = ticketsJson.getJSONObject(i)
                         val ticket = Ticket(
@@ -242,11 +252,11 @@ object Controller {
                             ticketJson.getString("place_in_room"),
                             false
                         )
-                        tickets.add(ticket)
-                        allTickets.add(ticket)
+                        ticketsList.add(ticket)
                     }
+                    allTickets.postValue(ticketsList.toList())
 
-                    return tickets
+                    return ticketsList
                 }
             }
         } catch (e: Exception) {
@@ -293,7 +303,7 @@ object Controller {
             return false
         }
     }
-
+    /*
     // Function to make cafeteria order
     fun makeCafeteriaOrder(items: List<Item>, vouchers: List<Voucher>): Int {
         val url = "$serverURL/make-cafeteria-order"
@@ -437,4 +447,5 @@ object Controller {
             return null
         }
     }
+*/
 }

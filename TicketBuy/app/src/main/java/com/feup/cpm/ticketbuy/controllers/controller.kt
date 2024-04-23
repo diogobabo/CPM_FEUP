@@ -170,7 +170,14 @@ object Controller {
         // Get from the server
         val url = "$serverURL/performances"
 
-        val urlObj = URL(url)
+
+        val performance = Performance(0, "performance1", "24/05", 8.0)
+        val performanceList = mutableListOf<Performance>()
+        performanceList.add(performance)
+        performances.postValue(performanceList.toList())
+
+
+        /*val urlObj = URL(url)
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 with(urlObj.openConnection() as HttpURLConnection) {
@@ -188,13 +195,12 @@ object Controller {
                     val performanceList = mutableListOf<Performance>()
                     for (i in 0 until performancesJson.length()) {
                         val performanceJson = performancesJson.getJSONObject(i)
-                        val performance = Performance(
+                        /*val performance = Performance(
                             performanceJson.getInt("performance_id"),
                             performanceJson.getString("name"),
                             performanceJson.getString("date"),
                             performanceJson.getString("price").toDouble()
-                        )
-                        performanceList.add(performance)
+                        )*/
                     }
                     performances.postValue(performanceList.toList())
                     println("getNextPerformances: $performances")
@@ -202,7 +208,7 @@ object Controller {
             } catch (e: Exception) {
                 println("getNextPerformances error: $e")
             }
-        }
+        }*/
     }
 
     // Function to purchase tickets
@@ -310,6 +316,59 @@ object Controller {
             println("validateTickets: ${e.message}")
             return false
         }
+    }
+
+    // Function to get cafeteria items
+    @OptIn(DelicateCoroutinesApi::class)
+    fun getCafeteriaItems() {
+        // Get from the server
+        val url = "$serverURL/items"
+
+
+        val item1 = Item(0, "pao", 50, 0.15)
+        val item2 = Item(1, "bolo", 20, 2.00)
+        val item3 = Item(2, "sumo", 30, 1.20)
+        val item4 = Item(3, "7up", 2, 1.20)
+
+        val itemsList = mutableListOf<Item>()
+        itemsList.add(item1)
+        itemsList.add(item2)
+        itemsList.add(item3)
+        itemsList.add(item4)
+        items.postValue(itemsList.toList())
+
+        /*val urlObj = URL(url)
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                with(urlObj.openConnection() as HttpURLConnection) {
+                    requestMethod = "GET"
+                    val response = readStream(inputStream)
+
+                    val responseCode = responseCode
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        println("getCafeteriaItems error: $responseCode")
+                        return@launch
+                    }
+
+                    // Parse the response
+                    val itemsJson = JSONArray(response)
+                    val itemsList = mutableListOf<Items>()
+                    for (i in 0 until itemsJson.length()) {
+                        val itemsJson = itemsJson.getJSONObject(i)
+                        /*val item = Item(
+                            itemsJson.getInt("item_id"),
+                            itemsJson.getString("name"),
+                            itemsJson.getString("quantity"),
+                            itemsJson.getString("price").toDouble()
+                        )*/
+                    }
+                    items.postValue(itemsList.toList())
+                    println("getCafeteriaItems: $items")
+                }
+            } catch (e: Exception) {
+                println("getCafeteriaItems error: $e")
+            }
+        }*/
     }
     /*
     // Function to make cafeteria order

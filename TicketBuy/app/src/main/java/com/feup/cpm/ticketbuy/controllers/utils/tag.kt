@@ -1,4 +1,4 @@
-package com.example.nfcreader.models
+package com.feup.cpm.ticketbuy.controllers.utils
 
 import org.json.JSONObject
 

@@ -3,6 +3,8 @@ DROP TABLE IF EXISTS Vouchers;
 DROP TABLE IF EXISTS Tickets;
 DROP TABLE IF EXISTS Performances;
 DROP TABLE IF EXISTS Customers;
+DROP TABLE IF EXISTS Intems;
+DROP TABLE IF EXISTS Orders;
 
 -- Create Customers table
 CREATE TABLE Customers (
@@ -65,6 +67,7 @@ CREATE TABLE Orders (
     user_id TEXT,
     order_date TEXT,
     intem INTEGER,
+    quantity INTEGER,
     FOREIGN KEY (intem) REFERENCES Intems(item_id),
     FOREIGN KEY (user_id) REFERENCES Customers(user_id)
 );
@@ -79,7 +82,7 @@ VALUES
 INSERT INTO Performances (name, date, price)
 VALUES 
     ('Concert', '2024-04-10', 25.00),
-    ('Theater Play', '2024-04-12', 30.00);
+    ('Theater Play', '2024-04-12', 80.00);
 
 -- Inserting data into Tickets table
 INSERT INTO Tickets (ticket_id, performance_id, user_id, place_in_room)
@@ -102,10 +105,10 @@ VALUES
 
 INSERT INTO Intems (name, quantity, price)
 VALUES 
-    ('Coke', 2, 1.50),
-    ('Popcorn', 1, 2.00),
-    ('Chocolate', 23, 1.50),
-    ('Chips', 100, 2.00);
+    ('Coke', 2000, 1.50),
+    ('Popcorn', 100, 2.00),
+    ('Chocolate', 230, 1.50),
+    ('Chips', 1000, 2.00);
 
 INSERT INTO Orders (order_id, user_id, order_date, intem)
 VALUES

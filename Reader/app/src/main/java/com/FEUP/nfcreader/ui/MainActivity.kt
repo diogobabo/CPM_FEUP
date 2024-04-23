@@ -1,4 +1,4 @@
-package com.example.nfcreader.ui
+package com.FEUP.nfcreader.ui
 
 import android.app.PendingIntent
 import android.content.Context

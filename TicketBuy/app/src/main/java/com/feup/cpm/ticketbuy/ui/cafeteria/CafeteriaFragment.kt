@@ -16,11 +16,14 @@ import android.graphics.Bitmap
 import android.widget.ScrollView
 import com.feup.cpm.ticketbuy.R
 import com.feup.cpm.ticketbuy.controllers.Controller
+import com.feup.cpm.ticketbuy.controllers.cypher.KeyManager
 import com.feup.cpm.ticketbuy.controllers.utils.QRCodeGenerator
+import com.feup.cpm.ticketbuy.controllers.utils.TagInfo
 import com.feup.cpm.ticketbuy.controllers.utils.handleBackPressed
 import com.feup.cpm.ticketbuy.models.Item
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import org.json.JSONObject
 
 class CafeteriaFragment : Fragment() {
 
@@ -156,15 +159,47 @@ class CafeteriaFragment : Fragment() {
         }
     }
     private fun showQRCodeDialog() {
-        val content = "userID:${controller.userID}/:/items:${itemQuantities.entries.joinToString(",") { "${it.key}:${it.value}" }}"
+        // Create the payload JSON object
+        val payloadJson = JSONObject()
+        val stringItemQuantities = itemQuantities.mapKeys { it.key.toString() }
+
+        payloadJson.put("selectedItems", JSONObject(stringItemQuantities))
+        payloadJson.put("signature", KeyManager.singData(payloadJson.toString().toByteArray()))
+        
+        // Create the TagInfo object
+        val tagInfo = TagInfo(
+            tagId = "cAFT ORDER 123", // You can generate a unique tagId if needed
+            status = true,
+            tagType = "Cafeteria",
+            userId = controller.userID, // Using the userId from the controller
+            payLoad = payloadJson
+        )
+
+        // Convert the TagInfo object to JSON string
+        val tagInfoJsonString = tagInfo.toJsonString()
+
+        // Generate QR code
         val width = resources.getDimensionPixelSize(R.dimen.qr_code_width)
         val height = resources.getDimensionPixelSize(R.dimen.qr_code_height)
+        val qrCodeBitmap: Bitmap? = QRCodeGenerator.generateQRCode(tagInfoJsonString, width, height)
 
-        val qrCodeBitmap: Bitmap? = QRCodeGenerator.generateQRCode(content, width, height)
         qrCodeBitmap?.let {
             val dialogFragment = QRCodeDialogFragment(it)
             dialogFragment.show(requireActivity().supportFragmentManager, "QRCodeDialog")
         }
+    }
+
+    // Add an extension function to convert TagInfo to JSON string
+    fun TagInfo.toJsonString(): String {
+        return JSONObject(
+            mapOf(
+                "tagId" to tagId,
+                "status" to status,
+                "tagType" to tagType,
+                "userId" to userId,
+                "payLoad" to payLoad
+            )
+        ).toString()
     }
 
 }

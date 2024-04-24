@@ -17,7 +17,7 @@ async function verifySignature (data, user_id, signature) {
     // Fetch the user's public key from the database based on the user_id
 
     const publicKeyBase64 = await fetchPublicKey(user_id); // Implement function to fetch public key from database
-
+    console.log(publicKeyBase64);
     const pemKey = `-----BEGIN PUBLIC KEY-----
 ${publicKeyBase64}-----END PUBLIC KEY-----`;
 
@@ -241,28 +241,51 @@ const updateTicketState = (ticket_ids) => {
     });
 };
 
-const checkItemValidity = (items) => {
+const checkItemValidity = async (items) => {
     let isValid = true;
+    console.log(items);
 
-    items.forEach(item => {
-        db.get(`SELECT * FROM Intems WHERE item_id = ? AND quantity >= ?`, [item.item_id, item.quantity], (err, row) => {
-            if (err) {
-                console.error('Error checking item validity:', err);
-                isValid = false;
-            }
+    // Convert object to array of key-value pairs
+    const itemEntries = Object.entries(items);
 
-            isValid = row.length > 0;
+    // Use async/await to wait for all database queries to complete
+    const promises = itemEntries.map(async ([itemId, quantity]) => {
+        return new Promise((resolve, reject) => {
+            db.get(`SELECT * FROM Intems WHERE item_id = ? AND quantity >= ?`, [itemId, quantity], (err, row) => {
+                if (err) {
+                    console.error('Error checking item validity:', err);
+                    reject(err);
+                    return;
+                }
+
+                if (row) {
+                    resolve(true); // Item is valid
+                } else {
+                    resolve(false); // Item is invalid
+                }
+            });
         });
     });
 
-    return isValid;
-}; 
+    // Wait for all promises to resolve
+    try {
+        const results = await Promise.all(promises);
+        // Check if any item is invalid
+        isValid = results.every(result => result === true);
+        return isValid;
+    } catch (err_1) {
+        console.error('Error in promises:', err_1);
+        return false;
+    }
+};
 
 const checkVoucherValidity = (vouchers, user_id) => {
     let isValid = true;
-
+    if(vouchers === undefined || vouchers.length === 0) {
+        return [];
+    }
     if (vouchers.length > 2) {
-        return false;
+        return [];
     }
     let validVoucher = [];
 
@@ -282,43 +305,82 @@ const checkVoucherValidity = (vouchers, user_id) => {
     return validVoucher
 };
 
-const calculateTotalPrice = (items, vouchers) => {
+const calculateTotalPrice = async (items, vouchers) => {
     let totalPrice = 0;
+    let itemPromises = [];
 
-    db.get(`SELECT * FROM Items WHERE item_id = ? AND quantity >= ?`, [items.item_id, items.quantity], (err, row) => {
-        if (err) {
-            console.error('Error calculating total price:', err);
+    // Calculate total price for each item
+    for (const [itemId, quantity] of Object.entries(items)) {
+        itemPromises.push(new Promise((resolve, reject) => {
+            db.get(`SELECT * FROM Intems WHERE item_id = ? AND quantity >= ?`, [itemId, quantity], (err, row) => {
+                if (err) {
+                    console.error('Error calculating total price:', err);
+                    reject(err);
+                    return;
+                }
+
+                if (row) {
+                    totalPrice += row.price * quantity;
+                    resolve();
+                } else {
+                    reject(`Item with ID ${itemId} and quantity ${quantity} not found or insufficient quantity.`);
+                }
+            });
+        }));
+    }
+
+    // Calculate total price for vouchers
+    if (vouchers.length == 0) {
+        try {
+            await Promise.all([...itemPromises]);
+            return totalPrice;
+        } catch (err_1) {
+            console.error('Error in promises:', err_1);
             return 0;
         }
+    }
 
-        totalPrice += row.price;
+    const voucherPromise = new Promise((resolve, reject) => {
+        db.get(`SELECT * FROM Vouchers WHERE voucher_id = ?`, [vouchers.voucher_id], (err, row) => {
+            if (err) {
+                console.error('Error calculating total price:', err);
+                reject(err);
+                return;
+            }
+
+            if (row && row.type_code === '5') {
+                totalPrice *= 0.95; // Apply 5% discount
+            }
+
+            resolve();
+        });
     });
 
-    db.get(`SELECT * FROM Vouchers WHERE voucher_id = ?`, [vouchers.voucher_id], (err, row) => {
-        if (err) {
-            console.error('Error calculating total price:', err);
-            return 0;
-        }
-
-        if (row.type_code === '5') {
-            totalPrice = totalPrice * 0.95;
-        }
-    });
-
-    return totalPrice;
+    // Wait for all promises to resolve
+    try {
+        await Promise.all([...itemPromises, voucherPromise]);
+        return totalPrice;
+    } catch (err_3) {
+        console.error('Error in promises:', err_3);
+        return 0;
+    }
 };
+
 
 const updateItemQuantities = (items) => {
     db.serialize(() => {
         db.run('BEGIN TRANSACTION');
-        items.forEach(item => {
-            db.run(`UPDATE Items SET quantity = quantity - ? WHERE item_id = ?`, [item.quantity, item.item_id], (err) => {
+
+        // Iterate through each item in the items object
+        for (const [itemId, quantity] of Object.entries(items)) {
+            db.run(`UPDATE Intems SET quantity = quantity - ? WHERE item_id = ?`, [quantity, itemId], (err) => {
                 if (err) {
                     console.error('Error updating item quantities:', err);
                     db.run('ROLLBACK');
+                    return;
                 }
-            })
-        });
+            });
+        }
 
         db.run('COMMIT', (err) => {
             if (err) {
@@ -327,6 +389,7 @@ const updateItemQuantities = (items) => {
         });
     });
 };
+
 
 const insertOrderIntoDatabase = (user_id, items) => {
     let lastID = 0;
@@ -336,18 +399,21 @@ const insertOrderIntoDatabase = (user_id, items) => {
         }
 
         lastID = row.lastID;
-    });
 
-    db.serialize(() => {
+        db.serialize(() => {
         db.run('BEGIN TRANSACTION');
-        items.forEach(item => {
-            db.run(`INSERT INTO Orders (order_id, user_id, item_id, quantity, order_date) VALUES (?, ?, ?, ?)`, [lastID + 1, item.item_id, item.quantity, new Date().toISOString()], (err) => {
+
+        // Iterate through each item in the items object
+        for (const [itemId, quantity] of Object.entries(items)) {
+            db.run(`INSERT INTO Orders (order_id, user_id, intem, quantity, order_date) VALUES (?, ?, ?, ?, ?)`, [lastID + 1, user_id, itemId, quantity, new Date().toISOString()], (err) => {
                 if (err) {
                     console.error('Error inserting order into database:', err);
                     db.run('ROLLBACK');
+                    return;
                 }
             });
-        });
+        }
+
         db.run('COMMIT', (err) => {
             if (err) {
                 console.error('Error committing transaction:', err);
@@ -355,7 +421,11 @@ const insertOrderIntoDatabase = (user_id, items) => {
             return lastID + 1;
         });
     });
+    });
+
+    
 };
+
 
 const deleteUsedVouchers = (vouchers) => {
     db.serialize(() => {
@@ -377,19 +447,26 @@ const deleteUsedVouchers = (vouchers) => {
     });
 };
 
-const makeCafeteriaOrder = (req, res) => {
+async function makeCafeteriaOrder (req, res) {
     // Extract data from request body
-    const { user_id, items, vouchers, signature } = req.body;
+    console.log(req.body);
+    const { user_id, selectedItems, signature } = req.body;
+    let { vouchers } = req.body;
+    if (vouchers === undefined) {
+        vouchers = [];
+    }
 
-    // Step 1: Verify the signature
-    const isSignatureValid = verifySignature(user_id, signature); // Implement verifySignature function
+    const jsondata = JSON.stringify({selectedItems});
+    const jsonByteArray = Buffer.from(jsondata);
+    
+    const isSignatureValid = await verifySignature(jsonByteArray, user_id, signature);
 
     if (!isSignatureValid) {
         return res.status(400).json({ error: 'Invalid signature' });
     }
 
     // Step 2: Check the validity of items and vouchers
-    const isValidItems = checkItemValidity(items); // Implement checkItemValidity function
+    const isValidItems = await checkItemValidity(selectedItems); // Implement checkItemValidity function
     const validVouchers = checkVoucherValidity(vouchers, user_id); // Implement checkVoucherValidity function
 
     if (!isValidItems) {
@@ -397,13 +474,13 @@ const makeCafeteriaOrder = (req, res) => {
     }
 
     // Step 3: Calculate the total price of the order
-    const totalPrice = calculateTotalPrice(items, vouchers); // Implement calculateTotalPrice function
+    const totalPrice = await calculateTotalPrice(selectedItems, vouchers); // Implement calculateTotalPrice function
 
     // Step 4: Update the quantity of items in the database
-    updateItemQuantities(items); // Implement updateItemQuantities function
+    updateItemQuantities(selectedItems); // Implement updateItemQuantities function
 
     // Step 5: Insert order information into the Orders table
-    const order_id = insertOrderIntoDatabase(user_id, items); // Implement insertOrderIntoDatabase function
+    const order_id = insertOrderIntoDatabase(user_id, selectedItems); // Implement insertOrderIntoDatabase function
 
     // Step 6: Delete used vouchers from the Vouchers table
     deleteUsedVouchers(vouchers); // Implement deleteUsedVouchers function
@@ -514,6 +591,18 @@ const validateVouchersAndPayOrder = (req, res) => {
     res.status(200).json({ validated: true, final_price: finalPrice, accepted_vouchers: acceptedVouchers });
 };
 
+const getItems = (req, res) => {
+    db.all(`SELECT * FROM Intems`, [], (err, rows) => {
+        if (err) {
+            console.error('Error retrieving items:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        res.status(200).json(rows);
+    });
+}
+
+
 // Export controller functions
 module.exports = {
     registerCustomer,
@@ -522,5 +611,6 @@ module.exports = {
     validateTickets,
     makeCafeteriaOrder,
     consultTransactions,
-    validateVouchersAndPayOrder
+    validateVouchersAndPayOrder,
+    getItems
 };

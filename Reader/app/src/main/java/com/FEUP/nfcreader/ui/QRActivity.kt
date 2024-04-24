@@ -1,8 +1,9 @@
-package com.example.nfcreader.ui
+package com.FEUP.nfcreader.ui
 
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -13,8 +14,9 @@ import com.budiyev.android.codescanner.DecodeCallback
 import com.budiyev.android.codescanner.ErrorCallback
 import com.budiyev.android.codescanner.ScanMode
 import com.example.nfcreader.R
-import com.example.nfcreader.controllers.Controller
-import com.example.nfcreader.models.TagInfo
+import com.FEUP.nfcreader.controllers.Controller
+import com.FEUP.nfcreader.models.TagInfo
+import org.json.JSONException
 
 class QRActivity : AppCompatActivity() {
     private lateinit var codeScanner: CodeScanner
@@ -52,32 +54,47 @@ class QRActivity : AppCompatActivity() {
         codeScanner.decodeCallback = DecodeCallback { result ->
             runOnUiThread {
 
-                val scannedInfo = result.rawBytes.toString(Charsets.UTF_8)
-                val tagInfo = TagInfo.fromJson(scannedInfo)
-                if (tagInfo != null) {
-                    if(tagInfo.tagType == "Ticket") {
-                        val bool = Controller().sendRequestValidateTicket(tagInfo)
-                        if (bool) {
-                            Toast.makeText(this, "Ticket Validated", Toast.LENGTH_LONG).show()
+                val rawScannedData  = result.rawBytes.toString(Charsets.UTF_8)
+                Log.d("ScannedInfo", rawScannedData )
+
+                val startIndex = rawScannedData.indexOf("{")
+                val endIndex = rawScannedData.lastIndexOf("}") + 1
+
+                if (startIndex != -1 && endIndex != -1) {
+                    val jsonScannedData = rawScannedData.substring(startIndex, endIndex)
+                    Log.d("JSONScannedData", jsonScannedData)
+                    try{
+                        val tagInfo = TagInfo.fromJson(jsonScannedData)
+                        if (tagInfo != null) {
+                            if(tagInfo.tagType == "Ticket") {
+                                val bool = Controller().sendRequestValidateTicket(tagInfo)
+                                if (true) {
+                                    Toast.makeText(this, "Ticket Validated", Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(this, "Invalid Ticket", Toast.LENGTH_LONG).show()
+                                }
+                            } else if(tagInfo.tagType == "Cafeteria"){
+                                val response = Controller().sendRequestMakeCafeteriaOrder(tagInfo)
+                                if (response != null) {
+                                    //show response
+                                    Toast.makeText(this, "Order Placed", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(this, response.toString(), Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(this, "Invalid Order", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            else {
+                                Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show()
+                            }
                         } else {
-                            Toast.makeText(this, "Invalid Ticket", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show()
                         }
-                    } else if(tagInfo.tagType == "Cafeteria"){
-                        val response = Controller().sendRequestMakeCafeteriaOrder(tagInfo)
-                        if (response != null) {
-                            //show response
-                            Toast.makeText(this, "Order Placed", Toast.LENGTH_LONG).show()
-                            Toast.makeText(this, response.toString(), Toast.LENGTH_LONG).show()
-                        } else {
-                            Toast.makeText(this, "Invalid Order", Toast.LENGTH_LONG).show()
-                        }
+                    } catch (e: JSONException){
+                        Log.e("JSONError", "Error parsing JSON", e)
                     }
-                    else {
-                        Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show()
-                    }
-                } else {
-                    Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_LONG).show()
                 }
+
+
             }
         }
         codeScanner.errorCallback = ErrorCallback { // or ErrorCallback.SUPPRESS

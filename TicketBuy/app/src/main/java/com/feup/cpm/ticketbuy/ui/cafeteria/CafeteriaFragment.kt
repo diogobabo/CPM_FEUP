@@ -54,6 +54,7 @@ class CafeteriaFragment : Fragment() {
 
         fab?.setOnClickListener(null)
         // change fab icon to shopping cart
+
         fab?.setImageResource(R.drawable.ic_shopping_cart)
         fab?.setOnClickListener {view ->
 
@@ -152,7 +153,7 @@ class CafeteriaFragment : Fragment() {
         super.onDestroyView()
         // Remove click listener to prevent memory leaks
         fab?.setOnClickListener(null)
-        fab?.setImageResource(R.drawable.ic_launcher_foreground)
+        fab?.setImageResource(R.drawable.ic_menu_gallery)
         fab?.setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show()

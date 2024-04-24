@@ -487,60 +487,64 @@ async function makeCafeteriaOrder (req, res) {
     // Step 6: Delete used vouchers from the Vouchers table
     deleteUsedVouchers(vouchers); // Implement deleteUsedVouchers function
 
+    db.run(`INSERT INTO Transactions (user_id, transaction_type, transaction_date, transaction_value) VALUES (?, ?, ?, ?)`, [user_id, 'Cafeteria Order', new Date().toISOString(), totalPrice], (err) => {
+        if (err) {
+            console.error('Error inserting transaction:', err);
+        }
+    });
+
+
     // Step 7: Return order confirmation and total price to the client
     res.status(200).json({ order_confirmation: 'Order placed successfully', total_price: totalPrice, order_id: order_id});
 };
 
 
-const consultTransactions = (req, res) => {
+const consultTransactions = async (req, res) => {
     const { user_id } = req.body;
 
-    let transactions = [];
-    let orders = [];
-    let vouchers = [];
-    let intems = [];
+    try {
+        const transactionsPromise = new Promise((resolve, reject) => {
+            db.all(`SELECT * FROM Transactions WHERE user_id = ?`, [user_id], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
 
+        const ordersPromise = new Promise((resolve, reject) => {
+            db.all(`SELECT * FROM Orders WHERE user_id = ?`, [user_id], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
 
-    db.get(`SELECT * FROM Transactions WHERE user_id = ?`, [user_id], (err, row) => {
-        if (err) {
-            console.error('Error consulting transactions:', err);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
+        const vouchersPromise = new Promise((resolve, reject) => {
+            db.all(`SELECT * FROM Vouchers WHERE user_id = ?`, [user_id], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
 
-        transactions = row;
-    });
+        const itemsPromise = new Promise((resolve, reject) => {
+            db.all(`SELECT * FROM Intems`, [], (err, rows) => {
+                if (err) reject(err);
+                resolve(rows);
+            });
+        });
 
-    db.get(`SELECT * FROM Orders WHERE user_id = ?`, [user_id], (err, row) => {
-        if (err) {
-            console.error('Error consulting transactions:', err);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
+        const [transactions, orders, vouchers, items] = await Promise.all([
+            transactionsPromise,
+            ordersPromise,
+            vouchersPromise,
+            itemsPromise,
+        ]);
+        console.log(transactions, orders, vouchers, items);
+        res.status(200).json({ transactions, orders, vouchers, items });
 
-        orders = row;
-    });
-
-    db.get(`SELECT * FROM Vouchers WHERE user_id = ?`, [user_id], (err, row) => {
-        if (err) {
-            console.error('Error consulting transactions:', err);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-
-        vouchers = row;
-    });
-
-    db.get(`SELECT * FROM Items `, [], (err, row) => {
-        if (err) {
-            console.error('Error consulting transactions:', err);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-
-        intems = row;
-    });
-
-
-    res.status(200).json({ transactions, orders, vouchers, intems });
+    } catch (error) {
+        console.error('Error consulting transactions:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 };
-
 
 const validateVouchersAndPayOrder = (req, res) => {
     // Extract data from request body

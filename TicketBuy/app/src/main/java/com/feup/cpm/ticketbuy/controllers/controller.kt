@@ -427,7 +427,7 @@ object Controller {
                     val responseJson = JSONObject(response)
                     val transactionsJson = responseJson.getJSONArray("transactions")
 
-                    //transactions.clear()
+                   val transactionsList = mutableListOf<Transaction>()
                     for (i in 0 until transactionsJson.length()) {
                         val transactionJson = transactionsJson.getJSONObject(i)
                         val transaction = Transaction(
@@ -437,10 +437,12 @@ object Controller {
                             transactionJson.getString("transaction_date"),
                             transactionJson.getDouble("transaction_value")
                         )
-                        //transactions.add(transaction)
+                        transactionsList.add(transaction)
                     }
+                    transactions.postValue(transactionsList.toList())
 
                     val ordersJson = responseJson.getJSONArray("orders")
+                    val ordersList = mutableListOf<Order>()
                     //orders.clear()
                     for (i in 0 until ordersJson.length()) {
                         val orderJson = ordersJson.getJSONObject(i)
@@ -450,11 +452,12 @@ object Controller {
                             orderJson.getString("order_date"),
                             emptyList()
                         )
-                        //orders.add(order)
+                        ordersList.add(order)
                     }
+                    orders.postValue(ordersList.toList())
 
                     val itemsJson = responseJson.getJSONArray("items")
-                    //items.clear()
+                    val itemsList = mutableListOf<Item>()
                     for (i in 0 until itemsJson.length()) {
                         val itemJson = itemsJson.getJSONObject(i)
                         val item = Item(
@@ -463,21 +466,24 @@ object Controller {
                             itemJson.getInt("quantity"),
                             itemJson.getDouble("price")
                         )
-                        //items.add(item)
+                        itemsList.add(item)
                     }
+                    items.postValue(itemsList.toList())
 
                     val vouchersJson = responseJson.getJSONArray("vouchers")
-                    //vouchers.clear()
+                    val vouchersList = mutableListOf<Voucher>()
                     for (i in 0 until vouchersJson.length()) {
                         val voucherJson = vouchersJson.getJSONObject(i)
                         val voucher = Voucher(
                             voucherJson.getString("voucher_id"),
                             voucherJson.getString("user_id"),
                             voucherJson.getString("type_code"),
-                            voucherJson.getBoolean("is_used")
+                            voucherJson.getInt("is_used") == 1
                         )
-                        //vouchers.add(voucher)
+                        vouchersList.add(voucher)
                     }
+                    vouchers.postValue(vouchersList.toList())
+
                 }
             } catch (e: Exception) {
                 println("consultTransactions error: $e")

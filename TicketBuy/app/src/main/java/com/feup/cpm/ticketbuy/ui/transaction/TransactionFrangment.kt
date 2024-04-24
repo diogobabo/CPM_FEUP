@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.feup.cpm.ticketbuy.R
@@ -22,15 +23,19 @@ class TransactionFrangment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        val scrollView = ScrollView(requireContext())
         rootLayout = LinearLayout(requireContext())
         rootLayout.orientation = LinearLayout.VERTICAL
+
+
+        scrollView.addView(rootLayout)
 
         controller.transactions.value?.forEach { transaction ->
             val transactionLayout = createTransactionLayout(inflater, container, transaction)
             rootLayout.addView(transactionLayout)
         }
 
-        return rootLayout
+        return scrollView
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

@@ -174,8 +174,8 @@ object Controller {
         val performance = Performance(0, "performance1", "24/05", 8.0)
         val performanceList = mutableListOf<Performance>()
         performanceList.add(performance)
-        performances.postValue(performanceList.toList())
-*/
+        performances.postValue(performanceList.toList())*/
+
 
         val urlObj = URL(url)
         GlobalScope.launch(Dispatchers.IO) {
@@ -401,10 +401,16 @@ object Controller {
     fun consultTransactions() {
         val url = "$serverURL/consult-transactions"
 
-        val urlObj = URL(url)
+    val url = "$serverURL/consult-transactions"
+    val transaction1 = Transaction(0, "0", "cafeteria", "23/04", 2.0)
+    val transaction2 = Transaction(1, "0", "ticket", "23/04", 10.0)
+    val transaction3 = Transaction(2, "0", "cafeteria", "23/04", 3.5)
 
-        val json = JSONObject()
-        json.put("user_id", userID)
+    val transactionss = mutableListOf<Transaction>()
+    transactionss.add(transaction1)
+    transactionss.add(transaction2)
+    transactionss.add(transaction3)
+    transactions.postValue(transactionss.toList())
 
         val signature = singData(json.toString().toByteArray())
         json.put("signature", signature)

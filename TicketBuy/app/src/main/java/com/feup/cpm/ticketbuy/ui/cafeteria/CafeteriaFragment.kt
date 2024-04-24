@@ -50,7 +50,7 @@ class CafeteriaFragment : Fragment() {
             rootLayout.addView(itemLayout)
         }
 
-        fab = requireActivity().findViewById(R.id.fab)
+        //fab = requireActivity().findViewById(R.id.fab)
 
         fab?.setOnClickListener(null)
         // change fab icon to shopping cart

@@ -1,5 +1,6 @@
 package com.FEUP.nfcreader.controllers
 
+import android.widget.Toast
 import com.FEUP.nfcreader.models.TagInfo
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -15,6 +16,11 @@ import java.net.URL
 val serverURL = "http://192.168.1.87:3000"
 
 class Controller {
+    interface RequestCallback {
+        fun onSuccess(message: String)
+        fun onFailure(message: String)
+    }
+
     private fun readStream(input: InputStream): String {
         var reader: BufferedReader? = null
         var line: String?
@@ -32,12 +38,12 @@ class Controller {
         return response.toString()
     }
     @OptIn(DelicateCoroutinesApi::class)
-    fun sendRequestValidateTicket(tag: TagInfo){
+    fun sendRequestValidateTicket(tag: TagInfo, callback: RequestCallback) {
         // Send request to server
         val url = "$serverURL/validate-tickets"
 
         val jsonObject = tag.payLoad
-        jsonObject.put("user_id",tag.userId)
+        jsonObject.put("user_id", tag.userId)
         GlobalScope.launch {
             try {
                 val urlObj = URL(url)
@@ -52,8 +58,16 @@ class Controller {
                     )
                     outputStream.write(jsonObject.toString().toByteArray())
                     val response = readStream(inputStream)
-
-                    val jsonResponse = JSONObject(response)
+                    println(response)
+                    if (responseCode == 200) {
+                        if (JSONObject(response).has("error")) {
+                            callback.onFailure("Invalid Ticket")
+                        } else {
+                            callback.onSuccess("Ticket Validated")
+                        }
+                    } else {
+                        callback.onFailure("Error validating ticket")
+                    }
                 }
             } catch (e: Exception) {
                 println("sendRequestValidateTicket: ${e}")

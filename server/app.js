@@ -16,7 +16,8 @@ const {
     consultTransactions,
     presentTickets,
     validateVouchersAndPayOrder,
-    getItems
+    getItems,
+    getTickets
 } = require('./controllers/controller.js');
 
 // Define routes
@@ -33,6 +34,7 @@ app.post('/make-cafeteria-order', makeCafeteriaOrder);
 app.get('/consult-transactions', consultTransactions);
 app.post('/validate-vouchers-and-pay-order', validateVouchersAndPayOrder);
 app.get('/items',getItems);
+app.post('/tickets', getTickets);
 
 // Start the server
 app.listen(port, () => {

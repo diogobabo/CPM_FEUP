@@ -1,6 +1,7 @@
 const uuid = require('uuid');
 const sqlite3 = require('sqlite3').verbose();
 const crypto = require('crypto');
+const { get } = require('http');
 
 // Connect to SQLite database
 const db = new sqlite3.Database('./sqlite/db.db', (err) => {
@@ -171,19 +172,22 @@ async function purchaseTickets (req, res) {
 };
 
 
-const validateTickets = (req, res) => {
+async function validateTickets (req, res) {
     // Extract data from request body
-    const { user_id, ticket_ids, performance_id, signature } = req.body;
+    console.log(req.body);
+    const { user_id, ticketId, performance_id, signature } = req.body;
 
-    // Step 1: Verify the signature
-    const isSignatureValid = verifySignature(user_id, signature); // Implement verifySignature function
+    const jsondata = JSON.stringify({ticketId, performance_id});
+    const jsonByteArray = Buffer.from(jsondata);
+
+    const isSignatureValid = await verifySignature(jsonByteArray, user_id, signature);
 
     if (!isSignatureValid) {
         return res.status(400).json({ error: 'Invalid signature' });
     }
 
     // Step 2: Check the validity of tickets
-    const isValidTickets = checkTicketValidity(user_id, ticket_ids, performance_id); // Implement checkTicketValidity function
+    const isValidTickets = await checkTicketValidity(user_id, ticketId, performance_id); // Implement checkTicketValidity function
 
     if (isValidTickets === 0) {
         return res.status(400).json({ error: 'Invalid tickets' });
@@ -194,49 +198,47 @@ const validateTickets = (req, res) => {
     }
 
     // Step 3: Update the state of validated tickets in the database
-    updateTicketState(ticket_ids); // Implement updateTicketState function
+    updateTicketState(ticketId); // Implement updateTicketState function
 
     // Step 4: Return validation result to client
     res.status(200).json({ validated: true });
 };
 
-// Function to check the validity of tickets
-const checkTicketValidity = (user_id, ticket_ids, performance_id) => {
-    ticket_ids.forEach(element => {
-        db.get(`SELECT * FROM Tickets WHERE user_id = ? AND ticket_id = ? AND performance_id = ?`, [user_id, element, performance_id], (err, row) => {
+// Function to check the validity of a ticket
+const checkTicketValidity = (user_id, ticketId, performance_id) => {
+    return new Promise((resolve, reject) => {
+        db.get(`SELECT * FROM Tickets WHERE user_id = ? AND ticket_id = ? AND performance_id = ?`, [user_id, ticketId, performance_id], (err, row) => {
             if (err) {
                 console.error('Error checking ticket validity:', err);
-                return 0;
+                reject(err);
+                return;
             }
 
-            if (row.length === 0) {
-                return 0;
+            if (!row) {
+                // Ticket not found
+                resolve(0);
+            } else if (row.is_used === 1) {
+                // Ticket is already used
+                resolve(1);
+            } else {
+                // Ticket is valid
+                resolve(2);
             }
-            else if (row.is_used === 1) {
-                return 1;
-            }
-            return 2;
         });
     });
 };
 
-// Function to update the state of validated tickets in the database
-const updateTicketState = (ticket_ids) => {
-    db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
-        ticket_ids.forEach(ticket_id => {
-            db.run(`UPDATE Tickets SET is_used = 1 WHERE ticket_id = ?`, [ticket_id], (err) => {
-                if (err) {
-                    console.error('Error updating ticket state:', err);
-                    db.run('ROLLBACK');
-                }
-            });
-        });
-
-        db.run('COMMIT', (err) => {
+// Function to update the state of a validated ticket in the database
+const updateTicketState = (ticket_id) => {
+    return new Promise((resolve, reject) => {
+        db.run(`UPDATE Tickets SET is_used = 1 WHERE ticket_id = ?`, [ticket_id], (err) => {
             if (err) {
-                console.error('Error committing transaction:', err);
+                console.error('Error updating ticket state:', err);
+                reject(err);
+                return;
             }
+
+            resolve();
         });
     });
 };
@@ -602,6 +604,51 @@ const getItems = (req, res) => {
     });
 }
 
+async function getTickets (req, res) {
+    const { user_id, signature } = req.body;
+    const jsondata = JSON.stringify({ user_id });
+    const jsonByteArray = Buffer.from(jsondata);
+
+    const isSignatureValid = await verifySignature(jsonByteArray, user_id, signature);
+    console.log("here");
+    if (!isSignatureValid) {
+        return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    try {
+        // Retrieve tickets from the database
+        const tickets = await new Promise((resolve, reject) => {
+            db.all(`SELECT * FROM Tickets WHERE user_id = ?`, [user_id], (err, rows) => {
+                if (err) {
+                    console.error('Error retrieving tickets:', err);
+                    reject('Internal Server Error');
+                    return;
+                }
+                resolve(rows);
+            });
+        });
+
+        // Retrieve performances for each ticket
+        const performances = await Promise.all(tickets.map(ticket => {
+            return new Promise((resolve, reject) => {
+                db.get(`SELECT * FROM Performances WHERE performance_id = ?`, [ticket.performance_id], (err, row) => {
+                    if (err) {
+                        console.error('Error retrieving performance:', err);
+                        reject('Internal Server Error');
+                        return;
+                    }
+                    resolve(row);
+                });
+            });
+        }));
+        await Promise.all(tickets, performances);
+        console.log(tickets, performances);
+        res.status(200).json({ tickets, performances });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error });
+    }
+}
 
 // Export controller functions
 module.exports = {
@@ -612,5 +659,6 @@ module.exports = {
     makeCafeteriaOrder,
     consultTransactions,
     validateVouchersAndPayOrder,
-    getItems
+    getItems,
+    getTickets
 };

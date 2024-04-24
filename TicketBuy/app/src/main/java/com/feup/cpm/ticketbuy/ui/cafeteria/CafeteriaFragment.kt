@@ -165,7 +165,7 @@ class CafeteriaFragment : Fragment() {
 
         payloadJson.put("selectedItems", JSONObject(stringItemQuantities))
         payloadJson.put("signature", KeyManager.singData(payloadJson.toString().toByteArray()))
-        
+
         // Create the TagInfo object
         val tagInfo = TagInfo(
             tagId = "cAFT ORDER 123", // You can generate a unique tagId if needed
@@ -190,7 +190,7 @@ class CafeteriaFragment : Fragment() {
     }
 
     // Add an extension function to convert TagInfo to JSON string
-    fun TagInfo.toJsonString(): String {
+    private fun TagInfo.toJsonString(): String {
         return JSONObject(
             mapOf(
                 "tagId" to tagId,

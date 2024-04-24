@@ -170,12 +170,12 @@ object Controller {
         // Get from the server
         val url = "$serverURL/performances"
 
-/*
+        /*
         val performance = Performance(0, "performance1", "24/05", 8.0)
         val performanceList = mutableListOf<Performance>()
         performanceList.add(performance)
-        performances.postValue(performanceList.toList())
-*/
+        performances.postValue(performanceList.toList())*/
+
 
         val urlObj = URL(url)
         GlobalScope.launch(Dispatchers.IO) {
@@ -325,7 +325,7 @@ object Controller {
         // Get from the server
         val url = "$serverURL/items"
 
-
+        /*
         val item1 = Item(0, "pao", 50, 0.15)
         val item2 = Item(1, "bolo", 20, 2.00)
         val item3 = Item(2, "sumo", 30, 1.20)
@@ -337,8 +337,8 @@ object Controller {
         itemsList.add(item3)
         itemsList.add(item4)
         items.postValue(itemsList.toList())
-
-        /*val urlObj = URL(url)
+*/
+        val urlObj = URL(url)
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 with(urlObj.openConnection() as HttpURLConnection) {
@@ -353,7 +353,7 @@ object Controller {
 
                     // Parse the response
                     val itemsJson = JSONArray(response)
-                    val itemsList = mutableListOf<Items>()
+                    val itemsList = mutableListOf<Item>()
                     for (i in 0 until itemsJson.length()) {
                         val itemsJson = itemsJson.getJSONObject(i)
                         /*val item = Item(
@@ -369,9 +369,59 @@ object Controller {
             } catch (e: Exception) {
                 println("getCafeteriaItems error: $e")
             }
-        }*/
+        }
     }
-    /*
+
+    // Function to get tickets
+    @OptIn(DelicateCoroutinesApi::class)
+    fun getTickets() {
+        // Get from the server
+        val url = "$serverURL/allTickets"
+        /*
+        val performance = Performance(0, "performance1", "24/05", 8.0)
+        val ticket = Ticket("0", performance, "rita", "2A", false)
+        val tickets = mutableListOf<Ticket>()
+        tickets.add(ticket)
+        allTickets.postValue(tickets.toList())
+        */
+
+        val urlObj = URL(url)
+        GlobalScope.launch(Dispatchers.IO) {
+/*            try {
+                with(urlObj.openConnection() as HttpURLConnection) {
+                    requestMethod = "GET"
+                    val response = readStream(inputStream)
+
+                    val responseCode = responseCode
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        println("getAllTickets error: $responseCode")
+                        return@launch
+                    }
+
+                    // Parse the response
+                    val allTicketsJson = JSONArray(response)
+                    val allTicketsList = mutableListOf<Ticket>()
+                    for (i in 0 until allTicketsJson.length()) {
+                        val allTicketsJson = allTicketsJson.getJSONObject(i)
+                        val tickets = Ticket(
+                            allTicketsJson.getString("ticketId"),
+                            allTicketsJson.getString("performance"),    //getPerformance???
+                            allTicketsJson.getString("userId"),
+                            allTicketsJson.getString("placeInRoom")
+                            allTicketsJson.getBoolean("isUsed")
+                        )
+                    }
+                    tickets.postValue(allTicketsList.toList())
+                    println("getTickets: $tickets")
+                }
+            } catch (e: Exception) {
+                println("getAllTickets error: $e")
+            }
+        }*/
+        }
+    }
+
+        /*
     // Function to make cafeteria order
     fun makeCafeteriaOrder(items: List<Item>, vouchers: List<Voucher>): Int {
         val url = "$serverURL/make-cafeteria-order"
@@ -424,96 +474,107 @@ object Controller {
     fun validateVouchersAndPayOrder(ordered_products: List<String>, vouchers: List<String>): Double {
         return 0.0
     }
-
+*/
     // Function to consult transactions
     fun consultTransactions(): List<Transaction>? {
-        val url = "$serverURL/consult-transactions"
 
-        val urlObj = URL(url)
+    val url = "$serverURL/consult-transactions"
+    val transaction1 = Transaction(0, "0", "cafeteria", "23/04", 2.0)
+    val transaction2 = Transaction(1, "0", "ticket", "23/04", 10.0)
+    val transaction3 = Transaction(2, "0", "cafeteria", "23/04", 3.5)
 
-        val json = JSONObject()
-        json.put("user_id", userID)
+    val transactionss = mutableListOf<Transaction>()
+    transactionss.add(transaction1)
+    transactionss.add(transaction2)
+    transactionss.add(transaction3)
+    transactions.postValue(transactionss.toList())
 
-        val signature = singData(json.toString().toByteArray())
-        json.put("signature", signature)
-
-        try {
-            with(urlObj.openConnection() as HttpURLConnection) {
-                requestMethod = "POST"
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("charset", "utf-8")
-                setRequestProperty("Content-Length", json.toString().toByteArray().size.toString())
-                outputStream.write(json.toString().toByteArray())
-                val response = readStream(inputStream)
-
-                // Parse the response
-                val responseJson = JSONObject(response)
-                if (responseJson.has("error")) {
-                    println("consultTransactions: ${responseJson.getString("error")}")
-                    return emptyList()
-                } else {
-                    val transactionsJson = responseJson.getJSONArray("transactions")
-
-                    transactions.clear()
-                    for (i in 0 until transactionsJson.length()) {
-                        val transactionJson = transactionsJson.getJSONObject(i)
-                        val transaction = Transaction(
-                            transactionJson.getInt("transaction_id"),
-                            transactionJson.getString("user_id"),
-                            transactionJson.getString("transaction_type"),
-                            transactionJson.getString("transaction_date"),
-                            transactionJson.getDouble("transaction_value")
-                        )
-                        transactions.add(transaction)
-                    }
-
-                    val ordersJson = responseJson.getJSONArray("orders")
-                    orders.clear()
-                    for (i in 0 until ordersJson.length()) {
-                        val orderJson = ordersJson.getJSONObject(i)
-                        val order = Order(
-                            orderJson.getInt("order_id"),
-                            orderJson.getString("user_id"),
-                            orderJson.getString("order_date"),
-                            emptyList()
-                        )
-                        orders.add(order)
-                    }
-
-                    val itemsJson = responseJson.getJSONArray("items")
-                    items.clear()
-                    for (i in 0 until itemsJson.length()) {
-                        val itemJson = itemsJson.getJSONObject(i)
-                        val item = Item(
-                            itemJson.getInt("item_id"),
-                            itemJson.getString("name"),
-                            itemJson.getInt("quantity"),
-                            itemJson.getDouble("price")
-                        )
-                        items.add(item)
-                    }
-
-                    val vouchersJson = responseJson.getJSONArray("vouchers")
-                    vouchers.clear()
-                    for (i in 0 until vouchersJson.length()) {
-                        val voucherJson = vouchersJson.getJSONObject(i)
-                        val voucher = Voucher(
-                            voucherJson.getString("voucher_id"),
-                            voucherJson.getString("user_id"),
-                            voucherJson.getString("type_code"),
-                            voucherJson.getBoolean("is_used")
-                        )
-                        vouchers.add(voucher)
-                    }
-
-                    return transactions
-                }
-            }
-        } catch (e: Exception) {
-            println("consultTransactions: ${e.message}")
-            return null
-        }
+    return transactionss
     }
-*/
+/*
+
+    val urlObj = URL(url)
+
+    val json = JSONObject()
+    json.put("user_id", userID)
+
+    val signature = singData(json.toString().toByteArray())
+    json.put("signature", signature)
+
+    try {
+        with(urlObj.openConnection() as HttpURLConnection) {
+            requestMethod = "POST"
+            doOutput = true
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("charset", "utf-8")
+            setRequestProperty("Content-Length", json.toString().toByteArray().size.toString())
+            outputStream.write(json.toString().toByteArray())
+            val response = readStream(inputStream)
+
+            // Parse the response
+            val responseJson = JSONObject(response)
+            if (responseJson.has("error")) {
+                println("consultTransactions: ${responseJson.getString("error")}")
+                return emptyList()
+            } else {
+                val transactionsJson = responseJson.getJSONArray("transactions")
+
+                transactions.clear()
+                for (i in 0 until transactionsJson.length()) {
+                    val transactionJson = transactionsJson.getJSONObject(i)
+                    val transaction = Transaction(
+                        transactionJson.getInt("transaction_id"),
+                        transactionJson.getString("user_id"),
+                        transactionJson.getString("transaction_type"),
+                        transactionJson.getString("transaction_date"),
+                        transactionJson.getDouble("transaction_value")
+                    )
+                    transactions.add(transaction)
+                }
+
+                val ordersJson = responseJson.getJSONArray("orders")
+                orders.clear()
+                for (i in 0 until ordersJson.length()) {
+                    val orderJson = ordersJson.getJSONObject(i)
+                    val order = Order(
+                        orderJson.getInt("order_id"),
+                        orderJson.getString("user_id"),
+                        orderJson.getString("order_date"),
+                        emptyList()
+                    )
+                    orders.add(order)
+                }
+
+                val itemsJson = responseJson.getJSONArray("items")
+                items.clear()
+                for (i in 0 until itemsJson.length()) {
+                    val itemJson = itemsJson.getJSONObject(i)
+                    val item = Item(
+                        itemJson.getInt("item_id"),
+                        itemJson.getString("name"),
+                        itemJson.getInt("quantity"),
+                        itemJson.getDouble("price")
+                    )
+                    items.add(item)
+                }
+
+                val vouchersJson = responseJson.getJSONArray("vouchers")
+                vouchers.clear()
+                for (i in 0 until vouchersJson.length()) {
+                    val voucherJson = vouchersJson.getJSONObject(i)
+                    val voucher = Voucher(
+                        voucherJson.getString("voucher_id"),
+                        voucherJson.getString("user_id"),
+                        voucherJson.getString("type_code"),
+                        voucherJson.getBoolean("is_used")
+                    )
+                    vouchers.add(voucher)
+                }
+
+                return transactions
+            }
+        }
+    } catch (e: Exception) {
+        println("consultTransactions: ${e.message}")
+        return null*/
 }
